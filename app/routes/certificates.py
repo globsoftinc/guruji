@@ -17,7 +17,7 @@ def validate_certificate_code(code):
     if not code or not isinstance(code, str):
         return False
     # Certificate codes are typically alphanumeric, 8-32 characters
-    return bool(re.match(r'^[A-Z0-9]{8,32}$', code.upper()))
+    return bool(re.match(r'^[A-Z0-9-]{8,32}$', code.upper()))
 
 
 @certificates_bp.route('/api/courses/<course_id>/toggle-attendance', methods=['POST'])
