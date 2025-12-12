@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Select Role - Guruji{% endblock %}
+
+{% block content %}
+<div class="role-selection">
+    <div class="selection-container">
+        <h1>Welcome to <span class="gradient-text">Guruji</span>! 🙏</h1>
+        <p>Choose how you want to use Guruji</p>
+
+        <div class="role-cards">
+            <button class="role-card" onclick="selectRole('student')">
+                <div class="role-icon student"><i class="fas fa-user-graduate"></i></div>
+                <h3>I'm a Student</h3>
+                <p>Enroll in courses and start learning</p>
+                <ul>
+                    <li><i class="fas fa-check"></i> Enroll in courses</li>
+                    <li><i class="fas fa-check"></i> Attend live classes</li>
+                    <li><i class="fas fa-check"></i> Watch recordings</li>
+                    <li><i class="fas fa-check"></i> Get certificates</li>
+                </ul>
+            </button>
+            <button class="role-card" onclick="selectRole('instructor')">
+                <div class="role-icon instructor"><i class="fas fa-chalkboard-teacher"></i></div>
+                <h3>I'm an Instructor</h3>
+                <p>Create courses and teach students</p>
+                <ul>
+                    <li><i class="fas fa-check"></i> Create unlimited courses</li>
+                    <li><i class="fas fa-check"></i> Schedule live classes</li>
+                    <li><i class="fas fa-check"></i> Upload recordings & notes</li>
+                    <li><i class="fas fa-check"></i> Track student progress</li>
+                </ul>
+                <span class="verification-note"><i class="fas fa-info-circle"></i> Requires verification</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function selectRole(role) {
+        if (!window.Clerk.user) { alert('Please sign in first'); return; }
+        const user = window.Clerk.user;
+        const res = await fetch('/api/auth/set-role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                clerk_user_id: user.id,
+                role: role,
+                email: user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '',
+                name: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+                profile_image: user.imageUrl || null
+            })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.verification_status === 'pending') {
+                window.location.href = '/verification-pending';
+            } else if (role === 'instructor') {
+                window.location.href = '/dashboard/instructor';
+            } else {
+                window.location.href = '/dashboard/student';
+            }
+        } else { 
+            alert('Error: ' + (await res.json()).error); 
+        }
+    }
+</script>
+{% endblock %}

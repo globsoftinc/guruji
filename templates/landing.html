@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Guruji - Learn from the Best{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <div class="hero-badge">🎓 Premium Learning Platform</div>
+        <h1 class="hero-title">
+            Learn Live with <span class="gradient-text">Guruji</span>
+        </h1>
+        <p class="hero-subtitle">
+            Join live Google Meet classes, access recorded lectures, and learn from expert instructors.
+            Your journey to knowledge starts here. 🙏
+        </p>
+        <div class="hero-actions">
+            <button id="hero-get-started" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket"></i> Get Started Free
+            </button>
+            <a href="/courses" class="btn btn-outline btn-lg">
+                <i class="fas fa-play"></i> Browse Courses
+            </a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat">
+                <span class="stat-value">{{ courses|length if courses else '10+' }}</span>
+                <span class="stat-label">Courses</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">500+</span>
+                <span class="stat-label">Students</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">Live</span>
+                <span class="stat-label">Classes</span>
+            </div>
+        </div>
+    </div>
+    <div class="hero-visual">
+        <div class="floating-card card-1"><i class="fab fa-google"></i><span>Google Meet</span></div>
+        <div class="floating-card card-2"><i class="fas fa-video"></i><span>Recorded</span></div>
+        <div class="floating-card card-3"><i class="fas fa-certificate"></i><span>Certificate</span></div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features">
+    <div class="section-header">
+        <h2 class="section-title">Why Choose <span class="gradient-text">Guruji</span>?</h2>
+        <p class="section-subtitle">Experience the best online learning platform designed for Nepali students</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fab fa-google"></i></div>
+            <h3>Live Google Meet Classes</h3>
+            <p>Attend live interactive sessions with your instructor. Ask questions in real-time.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-video"></i></div>
+            <h3>Auto-Recorded Lectures</h3>
+            <p>Never miss a class! All live sessions are automatically recorded.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-clock"></i></div>
+            <h3>Learn at Your Pace</h3>
+            <p>Access recordings anytime, anywhere. Rewatch difficult concepts.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-users"></i></div>
+            <h3>Community Learning</h3>
+            <p>Join a community of learners. Collaborate and grow together.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Courses Section -->
+{% if courses %}
+<section class="courses-section">
+    <div class="section-header">
+        <h2 class="section-title">Featured <span class="gradient-text">Courses</span></h2>
+        <p class="section-subtitle">Start learning today with our expert-led courses</p>
+    </div>
+
+    <div class="courses-grid">
+        {% for course in courses[:6] %}
+        <a href="/courses/{{ course._id }}" class="course-card">
+            <div class="course-thumbnail">
+                {% if not course.is_completed %}
+                    <div style="position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" title="Live & Active! 🔥">🔥</div>
+                {% endif %}
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail }}" alt="{{ course.title }}">
+                {% else %}
+                <div class="course-placeholder"><i class="fas fa-book-open"></i></div>
+                {% endif %}
+                <span class="course-badge {{ 'free' if course.price == 0 else '' }}">
+                    {{ 'Free' if course.price == 0 else 'Rs. ' + course.price|string }}
+                </span>
+            </div>
+            <div class="course-content">
+                <h3 class="course-title">
+                    {{ course.title }}
+                </h3>
+                <p class="course-description">{{ course.description[:100] }}...</p>
+                <div class="course-meta">
+                    <span><i class="fas fa-user"></i> {{ course.instructor.name if course.instructor else 'Instructor'
+                        }}</span>
+                    <span><i class="fas fa-video"></i> {{ course.completed_classes_count or 0 }} lessons</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div class="section-footer">
+        <a href="/courses" class="btn btn-outline">View All Courses <i class="fas fa-arrow-right"></i></a>
+    </div>
+</section>
+{% endif %}
+
+<!-- How It Works -->
+<section class="how-it-works">
+    <div class="section-header">
+        <h2 class="section-title">How It <span class="gradient-text">Works</span></h2>
+        <p class="section-subtitle">Start your learning journey in 3 simple steps</p>
+    </div>
+    <div class="steps-grid">
+        <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>Sign Up</h3>
+            <p>Create your free account in seconds</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>Enroll</h3>
+            <p>Browse and enroll in courses</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>Learn</h3>
+            <p>Attend live classes or watch recordings</p>
+        </div>
+    </div>
+</section>
+
+<!-- Certificate Verification Section -->
+<section class="verify-section" style="padding: 4rem 1rem; background: var(--bg-secondary); overflow: visible;">
+    <div style="max-width: 600px; margin: 0 auto; text-align: center; padding: 0 0.5rem;">
+        <div style="margin-bottom: 1.5rem;">
+            <i class="fas fa-certificate" style="font-size: clamp(2rem, 8vw, 3rem); color: var(--primary);"></i>
+        </div>
+        <h2 class="section-title" style="font-size: clamp(1.25rem, 5vw, 1.75rem);">Verify a <span class="gradient-text">Certificate</span></h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: clamp(0.85rem, 3vw, 1rem);">
+            Enter the certificate code to verify its authenticity
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 450px; margin: 0 auto; justify-content: center;">
+            <input type="text" id="verify-code-input" placeholder="XXXX-XXXX-XXXX" 
+                style="flex: 1; min-width: 200px; padding: 0.8rem 1rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: clamp(0.85rem, 3vw, 1rem); letter-spacing: 1px; text-transform: uppercase;">
+            <button onclick="goToVerify()" class="btn btn-primary" style="white-space: nowrap;">
+                <i class="fas fa-search"></i> Verify
+            </button>
+        </div>
+        <a href="/verify" style="display: inline-block; margin-top: 1rem; color: var(--primary); font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
+            <i class="fas fa-external-link-alt"></i> Go to full verification page
+        </a>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="cta-content">
+        <h2>Ready to Start Learning?</h2>
+        <p>Join thousands of students already learning on Guruji</p>
+        <button id="cta-signup" class="btn btn-white btn-lg"><i class="fas fa-user-plus"></i> Create Free
+            Account</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('hero-get-started').addEventListener('click', () => {
+        window.Clerk.user ? window.location.href = '/dashboard' : window.Clerk.openSignUp();
+    });
+    document.getElementById('cta-signup').addEventListener('click', () => {
+        window.Clerk.user ? window.location.href = '/dashboard' : window.Clerk.openSignUp();
+    });
+
+    function goToVerify() {
+        const code = document.getElementById('verify-code-input').value.trim();
+        if (code) {
+            window.location.href = `/verify?code=${encodeURIComponent(code)}`;
+        } else {
+            window.location.href = '/verify';
+        }
+    }
+
+    // Allow Enter key to verify
+    document.getElementById('verify-code-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') goToVerify();
+    });
+</script>
+{% endblock %}

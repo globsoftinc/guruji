@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block title %}Instructor Dashboard - Guruji{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 id="welcome-text">Welcome back! 🙏</h1>
+            <p>Manage your courses and connect with your students</p>
+        </div>
+        <div class="header-actions" id="header-actions">
+            <a href="#" class="btn btn-outline" id="connect-google" style="display:none" onclick="connectGoogle()">
+                <i class="fab fa-google"></i> <span id="google-btn-text">Connect Google</span>
+            </a>
+            <a href="/courses/create" class="btn btn-primary"><i class="fas fa-plus"></i> Create Course</a>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-book-open"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-courses">0</span><span
+                    class="stat-label">Courses</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-users"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-students">0</span><span
+                    class="stat-label">Students</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-video"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-recordings">0</span><span
+                    class="stat-label">Recordings</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-calendar"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-upcoming">0</span><span
+                    class="stat-label">Upcoming</span></div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-book-open"></i> Your Courses</h2><a href="/courses/create"
+                    class="btn btn-sm btn-outline"><i class="fas fa-plus"></i> New</a>
+            </div>
+            <div class="course-list" id="courses-list">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar"></i> Upcoming Classes</h2>
+            </div>
+            <div class="class-list" id="classes-list">
+                <div class="empty-state small"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="schedule-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-calendar-plus"></i> Schedule Class</h3><button class="modal-close"
+                onclick="closeModal('schedule-modal')">&times;</button>
+        </div>
+        <form id="schedule-form">
+            <input type="hidden" id="schedule-course-id">
+            <div class="form-group"><label>Class Title</label><input type="text" id="class-title" required></div>
+            <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="class-datetime" required>
+            </div>
+            <div class="form-group"><label>Duration (min)</label><input type="number" id="class-duration" value="60">
+            </div>
+            <div class="form-actions"><button type="button" class="btn btn-ghost"
+                    onclick="closeModal('schedule-modal')">Cancel</button><button type="submit"
+                    class="btn btn-primary">Schedule</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let dashboardData = null;
+
+    window.Clerk.load().then(async () => {
+        if (!window.Clerk.user) {
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        try {
+            // First, verify the user's role and verification status
+            const roleRes = await fetch('/api/verify-role', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (!roleRes.ok) {
+                window.location.href = '/dashboard';
+                return;
+            }
+
+            const roleData = await roleRes.json();
+
+            // Redirect students to student dashboard
+            if (roleData.role !== 'instructor') {
+                alert('Access denied. Instructor access required.');
+                window.location.href = '/dashboard/student';
+                return;
+            }
+
+            // Check verification status for instructors
+            if (roleData.verification_status === 'pending') {
+                window.location.href = '/verification-pending';
+                return;
+            } else if (roleData.verification_status !== 'approved') {
+                alert('Your instructor account is not verified.');
+                window.location.href = '/dashboard/student';
+                return;
+            }
+
+            const res = await fetch('/api/dashboard/instructor-data', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (!res.ok) {
+                if (res.status === 403) {
+                    alert('Access denied. Instructor access required.');
+                    window.location.href = '/dashboard/student';
+                    return;
+                }
+                window.location.href = '/dashboard';
+                return;
+            }
+
+            dashboardData = await res.json();
+            renderDashboard();
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    function renderDashboard() {
+        // Welcome text
+        document.getElementById('welcome-text').textContent = `Welcome back, ${dashboardData.user.name.split(' ')[0]}! 🙏`;
+
+        // Stats
+        document.getElementById('stat-courses').textContent = dashboardData.stats.total_courses;
+        document.getElementById('stat-students').textContent = dashboardData.stats.total_students;
+        document.getElementById('stat-recordings').textContent = dashboardData.stats.total_recordings;
+        document.getElementById('stat-upcoming').textContent = dashboardData.stats.upcoming_classes;
+
+        // Google button - show connected email or connect
+        const googleBtn = document.getElementById('connect-google');
+        const googleBtnText = document.getElementById('google-btn-text');
+        googleBtn.style.display = 'inline-flex';
+
+        if (dashboardData.has_google) {
+            const googleEmail = dashboardData.google_email;
+            if (googleEmail) {
+                googleBtnText.innerHTML = `<span style="color: #00c853;">✓</span> ${googleEmail}`;
+            } else {
+                googleBtnText.textContent = '✓ Google Connected';
+            }
+            googleBtn.onclick = null;
+            googleBtn.style.cursor = 'default';
+            googleBtn.style.opacity = '0.8';
+            googleBtn.title = 'Google Calendar & Drive connected';
+        }
+
+        // Courses
+        const coursesList = document.getElementById('courses-list');
+        if (dashboardData.courses.length === 0) {
+            coursesList.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>No courses yet.</p><a href="/courses/create" class="btn btn-primary">Create Course</a></div>';
+        } else {
+            coursesList.innerHTML = dashboardData.courses.map(c => `
+            <div class="course-item">
+                <div class="course-info">
+                    <h3>${c.title}</h3>
+                    <div class="course-meta">
+                        <span><i class="fas fa-users"></i> ${c.student_count} students</span>
+                        <span><i class="fas fa-video"></i> ${c.recording_count} recordings</span>
+                        <span class="status ${c.is_completed ? 'published' : (c.is_published ? 'published' : 'draft')}" style="${c.is_completed ? 'background: #00c853; color: white;' : ''}">
+                            ${c.is_completed ? 'Completed' : (c.is_published ? 'Published' : 'Draft')}
+                        </span>
+                        ${c.attendance_active ? '<span class="status" style="background: #ff5722; color: white;"><i class="fas fa-hand-paper"></i> Attendance ON</span>' : ''}
+                    </div>
+                </div>
+                <div class="course-actions">
+                    <button class="btn btn-sm ${c.attendance_active ? 'btn-primary' : 'btn-ghost'}" onclick="toggleAttendance('${c._id}', ${c.attendance_active || false})" title="${c.attendance_active ? 'Deactivate Attendance' : 'Activate Attendance'}" style="${c.attendance_active ? 'background: #ff5722; border-color: #ff5722;' : ''}">
+                        <i class="fas fa-hand-paper"></i>
+                    </button>
+                    <button class="btn btn-sm ${c.is_published ? 'btn-ghost' : 'btn-primary'}" onclick="togglePublish('${c._id}', ${c.is_published})" title="${c.is_published ? 'Unpublish' : 'Publish'}">
+                        <i class="fas ${c.is_published ? 'fa-eye-slash' : 'fa-globe'}"></i>
+                    </button>
+                    <button class="btn btn-sm ${c.is_completed ? 'btn-success' : 'btn-ghost'}" onclick="toggleComplete('${c._id}', ${c.is_completed})" title="${c.is_completed ? 'Mark as Active' : 'Mark as Completed'}" style="${c.is_completed ? 'color: #00e676;' : ''}">
+                        <i class="fas ${c.is_completed ? 'fa-undo' : 'fa-check'}"></i>
+                    </button>
+                    <a href="/courses/${c._id}" class="btn btn-sm btn-ghost" title="View"><i class="fas fa-eye"></i></a>
+                    <button class="btn btn-sm btn-ghost" onclick="openScheduleModal('${c._id}')" title="Schedule Class"><i class="fas fa-calendar-plus"></i></button>
+                    <button class="btn btn-sm btn-ghost" onclick="deleteCourse('${c._id}')" title="Delete Course" style="color: #f44336;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        // Upcoming Classes
+        const classesList = document.getElementById('classes-list');
+        if (dashboardData.upcoming_classes.length === 0) {
+            classesList.innerHTML = '<div class="empty-state small"><i class="fas fa-calendar"></i><p>No upcoming classes</p></div>';
+        } else {
+            classesList.innerHTML = dashboardData.upcoming_classes.map(c => {
+                const dt = c.datetime ? new Date(c.datetime) : null;
+                return `
+                <div class="class-item" id="class-${c.event_id}">
+                    <div class="class-date"><span class="day">${dt ? dt.getDate() : '--'}</span><span class="month">${dt ? dt.toLocaleString('default', { month: 'short' }) : '--'}</span></div>
+                    <div class="class-info"><h4>${c.title}</h4><p>${c.course_title}</p></div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="${c.meet_link}" target="_blank" class="btn btn-sm btn-primary" title="Join Meet"><i class="fas fa-video"></i></a>
+                        <button class="btn btn-sm btn-ghost" onclick="markClassCompleted('${c.course_id}', '${c.event_id}')" title="Mark as Completed" style="color: #00c853;"><i class="fas fa-check"></i></button>
+                        <button class="btn btn-sm btn-ghost" onclick="deleteScheduledClass('${c.course_id}', '${c.event_id}')" title="Delete Class" style="color: #f44336;"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+    }
+
+    function connectGoogle() {
+        window.location.href = '/api/auth/google?clerk_user_id=' + window.Clerk.user.id;
+    }
+
+    function openScheduleModal(id) {
+        document.getElementById('schedule-course-id').value = id;
+        document.getElementById('schedule-modal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    async function markClassCompleted(courseId, eventId) {
+        if (!confirm('Mark this class as completed? It will move to the completed section.')) return;
+        
+        try {
+            const res = await fetch(`/api/courses/${courseId}/mark-class-completed`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Clerk-User-Id': window.Clerk.user?.id
+                },
+                body: JSON.stringify({ event_id: eventId })
+            });
+            
+            if (res.ok) {
+                // Remove the class item from UI
+                const classEl = document.getElementById(`class-${eventId}`);
+                if (classEl) {
+                    classEl.style.opacity = '0.5';
+                    classEl.innerHTML = '<div style="padding: 1rem; color: #00c853;"><i class="fas fa-check-circle"></i> Marked as completed</div>';
+                    setTimeout(() => classEl.remove(), 1500);
+                }
+                // Update stats
+                const upcomingCount = document.getElementById('stat-upcoming');
+                if (upcomingCount) {
+                    upcomingCount.textContent = Math.max(0, parseInt(upcomingCount.textContent) - 1);
+                }
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        } catch (err) {
+            alert('Error marking class as completed');
+        }
+    }
+
+    async function deleteScheduledClass(courseId, eventId) {
+        if (!confirm('Delete this scheduled class? This action cannot be undone.')) return;
+        
+        try {
+            const res = await fetch(`/api/courses/${courseId}/delete-scheduled-class`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Clerk-User-Id': window.Clerk.user?.id
+                },
+                body: JSON.stringify({ event_id: eventId })
+            });
+            
+            if (res.ok) {
+                // Remove the class item from UI
+                const classEl = document.getElementById(`class-${eventId}`);
+                if (classEl) {
+                    classEl.style.opacity = '0.5';
+                    classEl.innerHTML = '<div style="padding: 1rem; color: #f44336;"><i class="fas fa-trash"></i> Class deleted</div>';
+                    setTimeout(() => classEl.remove(), 1500);
+                }
+                // Update stats
+                const upcomingCount = document.getElementById('stat-upcoming');
+                if (upcomingCount) {
+                    upcomingCount.textContent = Math.max(0, parseInt(upcomingCount.textContent) - 1);
+                }
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        } catch (err) {
+            alert('Error deleting class');
+        }
+    }
+
+    document.getElementById('schedule-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const courseId = document.getElementById('schedule-course-id').value;
+        const data = { title: document.getElementById('class-title').value, datetime: document.getElementById('class-datetime').value, duration: parseInt(document.getElementById('class-duration').value) };
+        const res = await fetch(`/api/courses/${courseId}/schedule-class`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Clerk-User-Id': window.Clerk.user?.id }, body: JSON.stringify(data) });
+        if (res.ok) { alert('Class scheduled!'); closeModal('schedule-modal'); location.reload(); } else { alert('Error: ' + (await res.json()).error); }
+    });
+
+    async function togglePublish(id, isPublished) {
+        const action = isPublished ? 'unpublish' : 'publish';
+        if (!confirm(`${isPublished ? 'Unpublish' : 'Publish'} this course?`)) return;
+
+        const res = await fetch(`/api/courses/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Clerk-User-Id': window.Clerk.user?.id
+            },
+            body: JSON.stringify({ is_published: !isPublished })
+        });
+
+        if (res.ok) {
+            alert(isPublished ? 'Course unpublished!' : 'Course published! 🎉');
+            location.reload();
+        } else {
+            alert('Error: ' + (await res.json()).error);
+        }
+    }
+
+    async function toggleComplete(id, isCompleted) {
+        if (!confirm(`Mark this course as ${isCompleted ? 'Active (In Progress)' : 'Completed'}?`)) return;
+        
+        const res = await fetch(`/api/courses/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Clerk-User-Id': window.Clerk.user?.id },
+            body: JSON.stringify({ is_completed: !isCompleted })
+        });
+
+        if (res.ok) {
+            alert(`Course marked as ${isCompleted ? 'Active' : 'Completed'}!`);
+            location.reload();
+        } else {
+            alert('Error updating status');
+        }
+    }
+
+    async function toggleAttendance(id, isActive) {
+        const action = isActive ? 'deactivate' : 'activate';
+        if (!confirm(`${isActive ? 'Deactivate' : 'Activate'} attendance for this course?`)) return;
+
+        const res = await fetch(`/api/courses/${id}/toggle-attendance`, {
+            method: 'POST',
+            headers: { 'X-Clerk-User-Id': window.Clerk.user?.id }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            alert(data.attendance_active ? 'Attendance activated! Students can now mark their attendance.' : 'Attendance deactivated.');
+            location.reload();
+        } else {
+            alert('Error toggling attendance');
+        }
+    }
+
+    async function deleteCourse(id) {
+        const course = dashboardData.courses.find(c => c._id === id);
+        const courseName = course ? course.title : 'this course';
+        
+        if (!confirm(`Are you sure you want to delete "${courseName}"?\n\nThis will permanently delete:\n- All course data\n- All enrollments\n- All recordings\n- All notes\n\nThis action cannot be undone!`)) return;
+        
+        // Double confirmation for safety
+        const confirmText = prompt(`Type "DELETE" to confirm deletion of "${courseName}":`);
+        if (confirmText !== 'DELETE') {
+            alert('Deletion cancelled.');
+            return;
+        }
+
+        const res = await fetch(`/api/courses/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Clerk-User-Id': window.Clerk.user?.id }
+        });
+
+        if (res.ok) {
+            alert('Course deleted successfully.');
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert('Error deleting course: ' + (data.error || 'Unknown error'));
+        }
+    }
+</script>
+{% endblock %}

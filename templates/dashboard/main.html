@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Guruji{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="empty-state large" id="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading your dashboard...</p>
+    </div>
+
+    <div id="not-logged-in" style="display: none;">
+        <div class="empty-state large">
+            <i class="fas fa-lock"></i>
+            <h3>Please sign in to access your dashboard</h3>
+            <p>You need to be logged in to view this page</p>
+            <button onclick="window.Clerk.openSignIn()" class="btn btn-primary btn-lg">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.Clerk.load().then(async () => {
+        const loading = document.getElementById('loading-state');
+        const notLoggedIn = document.getElementById('not-logged-in');
+
+        if (!window.Clerk.user) {
+            loading.style.display = 'none';
+            notLoggedIn.style.display = 'block';
+            return;
+        }
+
+        // Check if user exists in our database
+        try {
+            const res = await fetch('/api/dashboard/student-data', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Redirect based on role and verification status
+                if (data.user.role === 'instructor') {
+                    // Check verification status for instructors
+                    if (data.user.verification_status === 'pending') {
+                        window.location.href = '/verification-pending';
+                    } else if (data.user.verification_status === 'approved') {
+                        window.location.href = '/dashboard/instructor';
+                    } else {
+                        // Not verified yet or rejected, go to student dashboard
+                        window.location.href = '/dashboard/student';
+                    }
+                } else {
+                    window.location.href = '/dashboard/student';
+                }
+            } else if (res.status === 404) {
+                // User not in database - redirect to role selection page
+                window.location.href = '/select-role';
+            } else {
+                // Other error - redirect to role selection
+                window.location.href = '/select-role';
+            }
+        } catch (err) {
+            console.error(err);
+            window.location.href = '/select-role';
+        }
+    });
+</script>
+{% endblock %}

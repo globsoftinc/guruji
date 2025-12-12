@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Verification Pending - Guruji{% endblock %}
+
+{% block content %}
+<div class="verification-pending">
+    <div class="pending-container">
+        <div class="pending-icon">
+            <i class="fas fa-hourglass-half"></i>
+        </div>
+        <h1>Verification Pending</h1>
+        <p class="pending-message">Your instructor account is awaiting verification.</p>
+        
+        <div class="pending-info">
+            <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <span>Usually takes 24-48 hours</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-envelope"></i>
+                <span>You'll be notified once approved</span>
+            </div>
+        </div>
+        
+        <div class="pending-details">
+            <h3>What happens next?</h3>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Our team will review your application</li>
+                <li><i class="fas fa-check-circle"></i> Once approved, you can create courses</li>
+                <li><i class="fas fa-check-circle"></i> You'll get full access to instructor dashboard</li>
+            </ul>
+        </div>
+        
+        <div class="pending-actions">
+            <button onclick="checkStatus()" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> Check Status
+            </button>
+            <a href="/dashboard/student" class="btn btn-outline">
+                <i class="fas fa-user-graduate"></i> Continue as Student
+            </a>
+        </div>
+        
+        <p class="pending-note">
+            <i class="fas fa-info-circle"></i> 
+            You can still browse and enroll in courses as a student while waiting for approval.
+        </p>
+    </div>
+</div>
+
+<style>
+.verification-pending {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.pending-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 3rem;
+    max-width: 500px;
+    text-align: center;
+}
+
+.pending-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 193, 7, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.pending-icon i {
+    font-size: 2.5rem;
+    color: #ffc107;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.pending-container h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.pending-message {
+    color: #888;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.pending-info {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.info-item i {
+    color: var(--primary);
+}
+
+.pending-details {
+    background: rgba(233, 69, 96, 0.1);
+    border: 1px solid rgba(233, 69, 96, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.pending-details h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.pending-details ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pending-details li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #aaa;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.pending-details li:last-child {
+    margin-bottom: 0;
+}
+
+.pending-details li i {
+    color: #00c853;
+}
+
+.pending-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.pending-note {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.pending-note i {
+    margin-right: 0.25rem;
+}
+
+@media (max-width: 480px) {
+    .pending-container {
+        padding: 2rem 1.5rem;
+    }
+    
+    .pending-info {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .pending-actions {
+        flex-direction: column;
+    }
+    
+    .pending-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function checkStatus() {
+        if (!window.Clerk.user) {
+            alert('Please sign in first');
+            return;
+        }
+        
+        try {
+            const res = await fetch('/api/auth/check-verification', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.verification_status === 'approved') {
+                    alert('🎉 Congratulations! Your account has been verified!');
+                    window.location.href = '/dashboard/instructor';
+                } else if (data.verification_status === 'rejected') {
+                    alert('❌ Sorry, your instructor application was not approved. You can continue as a student.');
+                } else {
+                    alert('⏳ Your application is still under review. Please check back later.');
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error checking status. Please try again.');
+        }
+    }
+</script>
+{% endblock %}

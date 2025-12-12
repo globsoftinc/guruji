@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Courses - Guruji{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Explore <span class="gradient-text">Courses</span></h1>
+    <p>Learn from expert instructors with live classes and recorded lectures</p>
+</div>
+
+<div class="courses-container">
+    {% if courses %}
+    <div class="courses-grid large">
+        {% for course in courses %}
+        <a href="/courses/{{ course._id }}" class="course-card">
+            <div class="course-thumbnail">
+                {% if not course.is_completed %}
+                <div style="position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"
+                    title="Live & Active! 🔥">🔥</div>
+                {% endif %}
+                {% if course.thumbnail %}<img src="{{ course.thumbnail }}" alt="{{ course.title }}">
+                {% else %}<div class="course-placeholder"><i class="fas fa-book-open"></i></div>{% endif %}
+                <span class="course-badge {{ 'free' if course.price == 0 else '' }}">{{ 'Free' if course.price == 0 else
+                    'Rs. ' + course.price|string }}</span>
+            </div>
+            <div class="course-content">
+                <h3 class="course-title">
+                    {{ course.title }}
+                </h3>
+                <p class="course-description">{{ course.description[:120] }}...</p>
+                <div class="course-meta">
+                    <span><i class="fas fa-user"></i> {{ course.instructor.name if course.instructor else 'Instructor'
+                        }}</span>
+                    <span><i class="fas fa-users"></i> {{ course.student_count or 0 }} students</span>
+                    <span><i class="fas fa-video"></i> {{ course.completed_classes_count or 0 }} lessons</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state large"><i class="fas fa-book-open"></i>
+        <h3>No courses available yet</h3>
+        <p>Check back soon!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

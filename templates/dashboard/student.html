@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}My Learning - Guruji{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1 id="welcome-text">Welcome back! 🙏</h1>
+            <p>Continue your learning journey</p>
+        </div>
+        <a href="/courses" class="btn btn-primary"><i class="fas fa-search"></i> Browse Courses</a>
+    </div>
+
+    <div class="dashboard-grid student">
+        <div class="dashboard-section full-width">
+            <div class="section-header">
+                <h2><i class="fas fa-book-open"></i> My Courses</h2>
+            </div>
+            <div class="enrolled-grid" id="enrolled-courses">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section full-width" id="certificates-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fas fa-certificate"></i> My Certificates</h2>
+            </div>
+            <div class="certificates-grid" id="my-certificates">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar"></i> Upcoming Classes</h2>
+            </div>
+            <div class="class-list" id="upcoming-classes">
+                <div class="empty-state small"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-lightbulb"></i> Recommended <span id="recommended-count"
+                        style="font-size: 0.8rem; color: var(--text-secondary);"></span></h2>
+            </div>
+            <div class="recommended-list" id="recommended-courses">
+                <div class="empty-state small"><i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+            <div id="pagination-controls"
+                style="display: none; margin-top: 1rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
+                <button id="prev-page" class="btn btn-sm btn-ghost" disabled><i class="fas fa-chevron-left"></i>
+                    Prev</button>
+                <span id="page-info" style="font-size: 0.9rem; color: var(--text-secondary);">Page 1 of 1</span>
+                <button id="next-page" class="btn btn-sm btn-ghost"><i class="fas fa-chevron-right"></i> Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.Clerk.load().then(async () => {
+        if (!window.Clerk.user) {
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/dashboard/student-data', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (!res.ok) {
+                window.location.href = '/dashboard';
+                return;
+            }
+
+            const data = await res.json();
+            renderDashboard(data);
+            loadCertificates();
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    async function loadCertificates() {
+        try {
+            const res = await fetch('/api/my-certificates', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (res.ok) {
+                const certificates = await res.json();
+                renderCertificates(certificates);
+            }
+        } catch (err) {
+            console.error('Error loading certificates:', err);
+        }
+    }
+
+    function renderCertificates(certificates) {
+        const section = document.getElementById('certificates-section');
+        const container = document.getElementById('my-certificates');
+
+        if (certificates.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        container.innerHTML = certificates.map(cert => {
+            const issuedDate = new Date(cert.issued_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            return `
+                <div class="certificate-card" style="background: var(--bg-tertiary); border-radius: 12px; padding: clamp(1rem, 4vw, 1.5rem); border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="min-width: 0; flex: 1;">
+                            <h3 style="margin: 0; color: var(--text-primary); font-size: clamp(0.9rem, 3vw, 1rem); word-wrap: break-word;">${cert.course_title}</h3>
+                            <p style="margin: 0.25rem 0 0; color: var(--text-secondary); font-size: clamp(0.75rem, 2.5vw, 0.9rem);">by ${cert.instructor_name}</p>
+                        </div>
+                        <span style="background: var(--primary); color: #fff; padding: 0.25rem 0.5rem; border-radius: 20px; font-size: 0.7rem; white-space: nowrap;">
+                            <i class="fas fa-certificate"></i> Certified
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: clamp(1rem, 4vw, 1.5rem); margin-bottom: 1rem;">
+                        <div>
+                            <div style="font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: bold; color: var(--primary);">${cert.attendance_percentage}%</div>
+                            <div style="font-size: clamp(0.65rem, 2vw, 0.75rem); color: var(--text-secondary);">Attendance</div>
+                        </div>
+                        <div>
+                            <div style="font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: bold; color: var(--text-primary);">${cert.attendance_count}/${cert.total_classes}</div>
+                            <div style="font-size: clamp(0.65rem, 2vw, 0.75rem); color: var(--text-secondary);">Classes</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="font-size: clamp(0.7rem, 2vw, 0.8rem); color: var(--text-secondary);">
+                            <i class="fas fa-calendar-check"></i> ${issuedDate}
+                        </div>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <button onclick="copyCode('${cert.certificate_code}')" class="btn btn-sm btn-ghost" title="Copy Code">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <a href="/api/certificates/${cert.certificate_code}/download" class="btn btn-sm btn-ghost" title="Download PDF" download>
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <a href="/verify?code=${cert.certificate_code}" class="btn btn-sm btn-primary" title="View Certificate">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.75rem; font-family: monospace; font-size: clamp(0.75rem, 2.5vw, 0.9rem); color: var(--primary); letter-spacing: 1px; text-align: center; padding: 0.5rem; background: rgba(233, 69, 96, 0.1); border-radius: 8px; word-break: break-all;">
+                        ${cert.certificate_code}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function copyCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Certificate code copied!');
+        });
+    }
+
+    function renderDashboard(data) {
+        document.getElementById('welcome-text').textContent = `Welcome back, ${data.user.name.split(' ')[0]}! 🙏`;
+
+        // Enrolled Courses
+        const enrolledEl = document.getElementById('enrolled-courses');
+        if (data.enrolled_courses.length === 0) {
+            enrolledEl.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>No courses yet</p><a href="/courses" class="btn btn-primary">Browse Courses</a></div>';
+        } else {
+            enrolledEl.innerHTML = data.enrolled_courses.map(c => `
+            <a href="/courses/${c._id}" class="enrolled-card">
+                <div class="card-thumbnail">
+                    ${c.thumbnail ? `<img src="${c.thumbnail}">` : '<div class="placeholder"><i class="fas fa-book-open"></i></div>'}
+                    ${c.is_completed ? '<div class="completed-badge" style="position: absolute; top: 10px; right: 10px; background: #00c853; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;"><i class="fas fa-check-circle"></i> Completed</div>' : ''}
+                    <div class="progress-bar"><div class="progress" style="width: ${c.progress_percent}%"></div></div>
+                </div>
+                <div class="card-content">
+                    <h3>${c.title}</h3>
+                    <p class="instructor">by ${c.instructor_name}</p>
+                    <div class="card-meta"><span><i class="fas fa-video"></i> ${c.completed_classes_count || 0} lessons</span><span class="progress-text">${c.progress_percent}%</span></div>
+                </div>
+            </a>
+        `).join('');
+        }
+
+        // Upcoming Classes
+        const upcomingEl = document.getElementById('upcoming-classes');
+        if (data.upcoming_classes.length === 0) {
+            upcomingEl.innerHTML = '<div class="empty-state small"><i class="fas fa-calendar"></i><p>No upcoming classes</p></div>';
+        } else {
+            upcomingEl.innerHTML = data.upcoming_classes.map(c => {
+                const dt = c.datetime ? new Date(c.datetime) : null;
+                return `
+                <div class="class-item">
+                    <div class="class-date"><span class="day">${dt ? dt.getDate() : '--'}</span><span class="month">${dt ? dt.toLocaleString('default', { month: 'short' }) : '--'}</span></div>
+                    <div class="class-info"><h4>${c.title}</h4><p>${c.course_title}</p></div>
+                    <a href="${c.meet_link}" target="_blank" class="btn btn-sm btn-primary"><i class="fas fa-video"></i></a>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // Recommended with Pagination
+        const recommendedEl = document.getElementById('recommended-courses');
+        const paginationControls = document.getElementById('pagination-controls');
+        const pageInfo = document.getElementById('page-info');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const countSpan = document.getElementById('recommended-count');
+
+        const allRecommended = data.recommended_courses;
+        const itemsPerPage = 4;
+        let currentPage = 1;
+        const totalPages = Math.ceil(allRecommended.length / itemsPerPage);
+
+        function renderRecommendedPage() {
+            if (allRecommended.length === 0) {
+                recommendedEl.innerHTML = '<div class="empty-state small"><i class="fas fa-check-circle"></i><p>All explored!</p></div>';
+                paginationControls.style.display = 'none';
+                return;
+            }
+
+            countSpan.textContent = `(${allRecommended.length} courses)`;
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageItems = allRecommended.slice(start, end);
+
+            recommendedEl.innerHTML = pageItems.map(c => `
+            <a href="/courses/${c._id}" class="recommended-item">
+                <div class="item-icon">${c.thumbnail ? `<img src="${c.thumbnail}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover;">` : '<i class="fas fa-book-open"></i>'}</div>
+                <div class="item-info">
+                    <h4>${c.title}</h4>
+                    <span class="instructor" style="font-size: 0.8rem; color: var(--text-secondary);">by ${c.instructor_name}</span>
+                    <span class="price">${c.price === 0 ? 'Free' : 'Rs. ' + c.price}</span>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        `).join('');
+
+            // Update pagination controls
+            if (totalPages > 1) {
+                paginationControls.style.display = 'flex';
+                pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === totalPages;
+            } else {
+                paginationControls.style.display = 'none';
+            }
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderRecommendedPage();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderRecommendedPage();
+            }
+        });
+
+        renderRecommendedPage();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Verify Certificate - Guruji{% endblock %}
+
+{% block content %}
+<div class="verify-container" style="max-width: 1000px; margin: 0 auto; padding: clamp(1rem, 4vw, 2rem);">
+    <div class="page-header" style="text-align: center; margin-bottom: clamp(1rem, 4vw, 2rem);">
+        <h1 style="font-size: clamp(1.25rem, 5vw, 2rem);"><i class="fas fa-certificate" style="color: var(--primary);"></i> Certificate Verification</h1>
+        <p style="color: var(--text-secondary); font-size: clamp(0.85rem, 3vw, 1rem);">Enter the certificate code to verify its authenticity</p>
+    </div>
+
+    <div class="verify-form" style="background: var(--bg-card); border-radius: 12px; padding: clamp(1rem, 4vw, 2rem); margin-bottom: clamp(1rem, 4vw, 2rem);">
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Certificate Code</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                <input type="text" id="cert-code" placeholder="XXXX-XXXX-XXXX" 
+                    style="flex: 1; min-width: 200px; padding: clamp(0.75rem, 2vw, 1rem); background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: clamp(0.9rem, 3vw, 1.1rem); letter-spacing: clamp(1px, 0.5vw, 2px); text-transform: uppercase;">
+                <button onclick="verifyCertificate()" class="btn btn-primary btn-lg" style="white-space: nowrap;">
+                    <i class="fas fa-search"></i> Verify
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-section" style="display: none;">
+        <!-- Certificate result will be shown here -->
+    </div>
+
+    <div id="certificate-display" style="display: none;">
+        <!-- Certificate image will be shown here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Check if there's a code in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    if (codeFromUrl) {
+        document.getElementById('cert-code').value = codeFromUrl;
+        verifyCertificate();
+    }
+
+    async function verifyCertificate() {
+        const code = document.getElementById('cert-code').value.trim().toUpperCase();
+        if (!code) {
+            alert('Please enter a certificate code');
+            return;
+        }
+
+        const resultSection = document.getElementById('result-section');
+        const certDisplay = document.getElementById('certificate-display');
+        
+        resultSection.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Verifying...</p></div>';
+        resultSection.style.display = 'block';
+        certDisplay.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/certificates/verify/${code}`);
+            const data = await res.json();
+
+            if (data.valid) {
+                const issuedDate = new Date(data.issued_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                resultSection.innerHTML = `
+                    <div style="background: rgba(0, 200, 83, 0.1); border: 2px solid #00c853; border-radius: 12px; padding: clamp(1rem, 4vw, 1.5rem); text-align: center; margin-bottom: clamp(1rem, 4vw, 2rem);">
+                        <div style="font-size: clamp(2rem, 6vw, 3rem); color: #00c853; margin-bottom: 0.5rem;"><i class="fas fa-check-circle"></i></div>
+                        <h2 style="color: #00c853; margin-bottom: 0.5rem; font-size: clamp(1.1rem, 4vw, 1.5rem);">Certificate Verified ✓</h2>
+                        <p style="color: var(--text-secondary); font-size: clamp(0.8rem, 3vw, 1rem);">This certificate is authentic and valid</p>
+                        <div style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <div style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: clamp(0.75rem, 2.5vw, 0.9rem);">
+                                <span style="color: var(--text-secondary);">Student:</span>
+                                <span style="color: #fff; font-weight: 600; margin-left: 0.25rem;">${data.student_name}</span>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: clamp(0.75rem, 2.5vw, 0.9rem);">
+                                <span style="color: var(--text-secondary);">Course:</span>
+                                <span style="color: var(--primary); font-weight: 600; margin-left: 0.25rem;">${data.course_title}</span>
+                            </div>
+                            <div style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 8px; font-size: clamp(0.75rem, 2.5vw, 0.9rem);">
+                                <span style="color: var(--text-secondary);">Attendance:</span>
+                                <span style="color: #00c853; font-weight: 600; margin-left: 0.25rem;">${data.attendance_percentage}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                certDisplay.innerHTML = `
+                    <div style="background: var(--bg-card); border-radius: 16px; padding: clamp(1rem, 4vw, 1.5rem); border: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                            <h3 style="margin: 0; color: var(--text-primary); font-size: clamp(0.95rem, 3vw, 1.1rem);"><i class="fas fa-award" style="color: var(--primary); margin-right: 0.5rem;"></i>Certificate Preview</h3>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button onclick="copyCode('${data.certificate_code}')" class="btn btn-ghost btn-sm" title="Copy Code">
+                                    <i class="fas fa-copy"></i> <span class="hide-mobile">Copy</span>
+                                </button>
+                                <a href="/api/certificates/${data.certificate_code}/download" class="btn btn-primary btn-sm" download>
+                                    <i class="fas fa-download"></i> <span class="hide-mobile">Download</span> PDF
+                                </a>
+                            </div>
+                        </div>
+                        <div style="text-align: center; background: #0a0a0f; border-radius: 12px; padding: clamp(0.5rem, 2vw, 1rem); overflow: hidden;">
+                            <img src="/api/certificates/${data.certificate_code}/image" alt="Certificate" 
+                                style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="display: none; padding: clamp(1.5rem, 5vw, 3rem); color: var(--text-secondary);">
+                                <i class="fas fa-image" style="font-size: clamp(1.5rem, 5vw, 3rem); margin-bottom: 1rem; opacity: 0.5;"></i>
+                                <p>Certificate image preview not available</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; padding: clamp(0.5rem, 2vw, 1rem); background: rgba(233, 69, 96, 0.1); border-radius: 8px; text-align: center; overflow-wrap: break-word;">
+                            <span style="color: var(--text-secondary); font-size: clamp(0.75rem, 2.5vw, 0.85rem);">Certificate ID:</span>
+                            <span style="color: var(--primary); font-family: monospace; font-size: clamp(0.85rem, 3vw, 1.1rem); letter-spacing: clamp(1px, 0.5vw, 2px); margin-left: 0.5rem; word-break: break-all;">${data.certificate_code}</span>
+                        </div>
+                    </div>
+                `;
+                certDisplay.style.display = 'block';
+            } else {
+                resultSection.innerHTML = `
+                    <div style="background: rgba(244, 67, 54, 0.1); border: 2px solid #f44336; border-radius: 12px; padding: 2rem; text-align: center;">
+                        <div style="font-size: 3rem; color: #f44336; margin-bottom: 0.5rem;"><i class="fas fa-times-circle"></i></div>
+                        <h2 style="color: #f44336; margin-bottom: 0.5rem;">Certificate Not Found</h2>
+                        <p style="color: var(--text-secondary);">The certificate code you entered is invalid or does not exist.</p>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            resultSection.innerHTML = `
+                <div style="background: rgba(244, 67, 54, 0.1); border: 2px solid #f44336; border-radius: 12px; padding: 2rem; text-align: center;">
+                    <div style="font-size: 3rem; color: #f44336; margin-bottom: 0.5rem;"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h2 style="color: #f44336; margin-bottom: 0.5rem;">Error</h2>
+                    <p style="color: var(--text-secondary);">An error occurred while verifying the certificate. Please try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    function copyCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Certificate code copied to clipboard!');
+        });
+    }
+
+    // Allow Enter key to verify
+    document.getElementById('cert-code').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyCertificate();
+    });
+</script>
+{% endblock %}

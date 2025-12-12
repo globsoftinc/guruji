@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Create Course - Guruji{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-container" id="form-container" style="display: none;">
+        <div class="form-header">
+            <a href="/dashboard/instructor" class="back-link"><i class="fas fa-arrow-left"></i> Back</a>
+            <h1>Create New Course</h1>
+            <p>Fill in the details to create your course</p>
+        </div>
+
+        <form id="create-course-form" class="course-form">
+            <div class="form-group">
+                <label for="title">Course Title *</label>
+                <input type="text" id="title" name="title" placeholder="e.g., Python for Beginners" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description *</label>
+                <textarea id="description" name="description" rows="4"
+                    placeholder="Describe what students will learn..." required></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="price">Price (Rs.)</label>
+                    <input type="number" id="price" name="price" value="0" min="0">
+                    <span class="hint">0 for free</span>
+                </div>
+                <div class="form-group">
+                    <label for="thumbnail">Thumbnail URL</label>
+                    <input type="url" id="thumbnail" name="thumbnail" placeholder="https://...">
+                    <span class="hint">Optional</span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <a href="/dashboard/instructor" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Create</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="loading-state" class="empty-state large">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading...</p>
+    </div>
+
+    <div id="not-authorized" style="display: none;" class="empty-state large">
+        <i class="fas fa-lock"></i>
+        <h3>Instructor Access Required</h3>
+        <p>Only instructors can create courses</p>
+        <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.Clerk.load().then(async () => {
+        const loadingState = document.getElementById('loading-state');
+        const formContainer = document.getElementById('form-container');
+        const notAuthorized = document.getElementById('not-authorized');
+
+        if (!window.Clerk.user) {
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        // Check if user is an instructor
+        try {
+            const roleRes = await fetch('/api/verify-role', {
+                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+            });
+
+            if (!roleRes.ok) {
+                window.location.href = '/dashboard';
+                return;
+            }
+
+            const roleData = await roleRes.json();
+
+            if (roleData.role === 'instructor') {
+                // Check verification status
+                if (roleData.verification_status === 'pending') {
+                    alert('Your instructor account is pending verification.');
+                    window.location.href = '/verification-pending';
+                    return;
+                } else if (roleData.verification_status !== 'approved') {
+                    alert('Your instructor account is not verified.');
+                    window.location.href = '/dashboard/student';
+                    return;
+                }
+                
+                // Show form
+                loadingState.style.display = 'none';
+                formContainer.style.display = 'block';
+            } else {
+                // Not an instructor - redirect to student dashboard
+                alert('Access denied. Only instructors can create courses.');
+                window.location.href = '/dashboard/student';
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+            loadingState.style.display = 'none';
+            notAuthorized.style.display = 'block';
+        }
+
+        // Handle form submission
+        document.getElementById('create-course-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                price: parseFloat(document.getElementById('price').value) || 0,
+                thumbnail: document.getElementById('thumbnail').value || null
+            };
+
+            try {
+                const res = await fetch('/api/courses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Clerk-User-Id': window.Clerk.user.id
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    const c = await res.json();
+                    alert('Course created! 🎉');
+                    window.location.href = '/courses/' + c._id;
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + err.error);
+                }
+            } catch (err) {
+                alert('Error creating course: ' + err.message);
+            }
+        });
+    });
+</script>
+{% endblock %}
