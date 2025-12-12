@@ -45,3 +45,7 @@ def verification_pending():
 def health():
     """Health check endpoint."""
     return {'status': 'ok'}
+
+@main_bp.route("/favicon.ico")
+def favicon():
+    return "", 200
