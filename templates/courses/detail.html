@@ -600,7 +600,7 @@
 
             if (!res.ok) throw new Error('Failed to load notes');
 
-            const notes = await res.json();
+            const notes = (await res.json()).reverse();
 
             if (notes.length === 0) {
                 notesList.innerHTML = `<div class="empty-state small"><i class="fas fa-file-pdf"></i><p>No notes available</p></div>`;
