@@ -68,7 +68,7 @@ def create_app():
     from app.routes.certificates import certificates_bp
     
     app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(courses_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(enrollments_bp, url_prefix='/api')
