@@ -69,6 +69,8 @@ def create_app():
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    # Also register at /auth to support callback URLs configured without /api prefix
+    app.register_blueprint(auth_bp, url_prefix='/auth', name='auth_external')
     app.register_blueprint(courses_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(enrollments_bp, url_prefix='/api')
