@@ -55,21 +55,8 @@ def create_app():
     # Context processor to make config available in templates
     @app.context_processor
     def inject_config():
-        return {'config': Config, 'current_user': getattr(g, 'current_user', None)}
-
-    # Session-based auth loader
-    from app.models.user import User
-    from flask import session, g
-
-    @app.before_request
-    def load_user_from_session():
-        """Load user from session into global context."""
-        user_id = session.get('user_id')
-        if user_id:
-            g.current_user = User.find_by_id(user_id)
-        else:
-            g.current_user = None
-
+        return {'config': Config}
+    
     # Register blueprints
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
@@ -82,7 +69,6 @@ def create_app():
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    # Also register at /auth to support callback URLs configured without /api prefix
     app.register_blueprint(auth_bp, url_prefix='/auth', name='auth_external')
     app.register_blueprint(courses_bp)
     app.register_blueprint(dashboard_bp)
