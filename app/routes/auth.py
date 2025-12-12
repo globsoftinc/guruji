@@ -112,8 +112,16 @@ def google_callback():
     )
     flow.redirect_uri = Config.GOOGLE_REDIRECT_URI
     
-    # Exchange authorization code for tokens
-    flow.fetch_token(authorization_response=request.url)
+    # Fix for http/https mismatch behind proxies (e.g. Vercel)
+    authorization_response = request.url
+    if authorization_response.startswith('http://') and 'https' in Config.GOOGLE_REDIRECT_URI:
+        authorization_response = authorization_response.replace('http://', 'https://', 1)
+    
+    try:
+        # Exchange authorization code for tokens
+        flow.fetch_token(authorization_response=authorization_response)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     credentials = flow.credentials
     
     # Fetch the Google user's email to show which account is connected
