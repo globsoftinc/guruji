@@ -39,7 +39,26 @@
 
             <div class="nav-menu">
                 <a href="/courses" class="nav-link">Courses</a>
-                <div id="user-button"></div>
+
+                {% if current_user %}
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <div class="user-profile-menu">
+                    {% if current_user.profile_image %}
+                    <img src="{{ current_user.profile_image }}" alt="Profile" class="nav-avatar">
+                    {% else %}
+                    <div class="nav-avatar-placeholder">{{ current_user.name[0] }}</div>
+                    {% endif %}
+                    <div class="dropdown-menu">
+                        <a href="/dashboard/settings" class="dropdown-item">Settings</a>
+                        <button id="logout-btn" class="dropdown-item text-danger">Sign Out</button>
+                    </div>
+                </div>
+                {% else %}
+                <button id="sign-in-btn" class="btn btn-primary">Sign In</button>
+                {% endif %}
+
+                <!-- Hidden Clerk button container for session management -->
+                <div id="user-button" style="display: none;"></div>
             </div>
         </div>
     </nav>
@@ -64,41 +83,57 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     <script>
-        // Initialize Clerk
+        // Initialize Clerk (Silent Mode for Session Management)
         window.Clerk.load().then(async () => {
             const userButtonDiv = document.getElementById("user-button");
 
+            // Handle Sign In Button
+            const signInBtn = document.getElementById('sign-in-btn');
+            if (signInBtn) {
+                signInBtn.onclick = () => window.Clerk.openSignIn();
+            }
+
+            // Handle Logout Button
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.onclick = async () => {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    await window.Clerk.signOut();
+                    window.location.href = '/';
+                };
+            }
+
+            // Session Synchronization
             if (window.Clerk.user) {
-                window.Clerk.mountUserButton(userButtonDiv, {
-                    afterSignOutUrl: "/"
-                });
-
-                const dashLink = document.createElement('a');
-                dashLink.href = '/dashboard';
-                dashLink.className = 'nav-link';
-                dashLink.textContent = 'Dashboard';
-                userButtonDiv.parentElement.insertBefore(dashLink, userButtonDiv);
-
-                // Auto-sync profile data to backend
+                // User is logged into Clerk. Check if we need to sync session.
+                {% if not current_user %}
+                // Client has Clerk session but Server has no Flask session -> Sync
                 try {
                     const user = window.Clerk.user;
-                    await fetch('/api/auth/sync-profile', {
+                    const res = await fetch('/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            clerk_user_id: user.id,
-                            email: user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '',
-                            name: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
-                            profile_image: user.imageUrl || null
+                            clerk_user_id: user.id
                         })
                     });
-                } catch (e) { console.log('Profile sync skipped'); }
+                    if (res.ok) {
+                        window.location.reload(); // Reload to render authenticated UI
+                    }
+                } catch (e) { console.error('Session sync failed', e); }
+                {% endif %}
+
+                // Mount hidden user button to keep Clerk session alive/refresh tokens
+                if (userButtonDiv) {
+                    window.Clerk.mountUserButton(userButtonDiv);
+                }
             } else {
-                const signInBtn = document.createElement('button');
-                signInBtn.className = 'btn btn-primary';
-                signInBtn.textContent = 'Sign In';
-                signInBtn.onclick = () => window.Clerk.openSignIn();
-                userButtonDiv.appendChild(signInBtn);
+                // User is logged out of Clerk.
+                {% if current_user %}
+                // Server thinks user is logged in -> Logout
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.reload();
+                {% endif %}
             }
         });
     </script>
