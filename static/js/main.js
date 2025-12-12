@@ -73,11 +73,6 @@ async function apiCall(url, method = 'GET', data = null) {
         }
     };
 
-    // Add Clerk user ID if available
-    if (window.Clerk?.user?.id) {
-        options.headers['X-Clerk-User-Id'] = window.Clerk.user.id;
-    }
-
     if (data) {
         options.body = JSON.stringify(data);
     }
