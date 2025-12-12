@@ -1479,6 +1479,12 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--bg-card);
 }
 
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
 .footer-container {
     max-width: 1280px;
     margin: 0 auto;
@@ -2468,10 +2474,4 @@ html, body {
     .hide-desktop {
         display: none !important;
     }
-}
-
-.notes-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
 }
