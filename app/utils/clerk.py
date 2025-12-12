@@ -62,7 +62,11 @@ def require_auth(f):
     """Decorator to require authentication."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Get session token from cookie or header
+        # 1. Check if user is already loaded from session (fastest)
+        if hasattr(g, 'current_user') and g.current_user:
+            return f(*args, **kwargs)
+
+        # 2. Fallback: Get session token from cookie or header (slow, legacy/API)
         session_token = request.cookies.get('__session') or \
                        request.headers.get('Authorization', '').replace('Bearer ', '')
         
@@ -73,6 +77,7 @@ def require_auth(f):
         clerk_user_id = request.headers.get('X-Clerk-User-Id')
         
         if not clerk_user_id:
+             # Try to get from verify logic if header missing? For now require header or session
             return jsonify({'error': 'User ID not found'}), 401
         
         # Validate clerk_user_id format to prevent injection attacks
