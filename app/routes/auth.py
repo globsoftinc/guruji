@@ -262,3 +262,33 @@ def check_verification():
         'role': user.get('role'),
         'verification_status': user.get('verification_status')
     })
+
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    """Establish server-side session after Clerk client-side login."""
+    data = request.get_json()
+    clerk_user_id = data.get('clerk_user_id')
+    
+    if not clerk_user_id or not validate_clerk_user_id(clerk_user_id):
+        return jsonify({'error': 'Invalid user ID'}), 400
+        
+    user = User.find_by_clerk_id(clerk_user_id)
+    if not user:
+        # Check if we need to create it (sync happening now)
+        # This might be a race condition with webhook, but client usually calls this after user is created
+        return jsonify({'error': 'User not found'}), 404
+
+    # Set session
+    session['user_id'] = str(user['_id'])
+    session['clerk_id'] = clerk_user_id
+    session.permanent = True  # Use permanent session if configured
+    
+    return jsonify({'success': True})
+
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    """Clear server-side session."""
+    session.clear()
+    return jsonify({'success': True})
