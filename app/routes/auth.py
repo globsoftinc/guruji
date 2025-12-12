@@ -11,6 +11,9 @@ from app.utils.validators import validate_clerk_user_id, sanitize_string, valida
 if os.getenv('FLASK_ENV') == 'development':
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
+# Relax scope validation as Google often adds openid/userinfo
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+
 auth_bp = Blueprint('auth', __name__)
 
 
