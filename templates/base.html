@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Guruji{% endblock %} - गुरुजी</title>
+    <title>{% block title %}Guruji{% endblock %}</title>
     <meta name="description"
         content="{% block description %}Learn from the best with live Google Meet classes and recorded lectures{% endblock %}">
 
@@ -17,6 +17,12 @@
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+        <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='favicons/site.webmanifest') }}">
 
     <!-- Auth Cache (loads before Clerk for optimistic UI) -->
     <script src="{{ url_for('static', filename='js/auth-cache.js') }}"></script>
