@@ -25,19 +25,12 @@ def list_courses():
         course['instructor'] = instructor
         course['student_count'] = Enrollment.count_by_course(course['_id'])
         
-        # Count completed classes
-        now = datetime.now()
-        completed_count = 0
-        for scheduled in course.get('scheduled_classes', []):
-            scheduled_dt = scheduled.get('datetime')
-            if scheduled_dt:
-                if scheduled_dt.tzinfo:
-                    now_tz = datetime.now(scheduled_dt.tzinfo)
-                else:
-                    now_tz = now
-                if scheduled_dt <= now_tz:
-                    completed_count += 1
-        course['completed_classes_count'] = completed_count
+    # Count manually marked completed classes only
+    completed_count = 0
+    for scheduled in course.get('scheduled_classes', []):
+        if scheduled.get('is_completed'):
+            completed_count += 1
+    course['completed_classes_count'] = completed_count
     
     return render_template('courses/list.html', courses=courses)
 
