@@ -25,12 +25,27 @@ def list_courses():
         course['instructor'] = instructor
         course['student_count'] = Enrollment.count_by_course(course['_id'])
         
-    # Count manually marked completed classes only
-    completed_count = 0
+    # Separate scheduled classes into upcoming and completed
+    # Always use UTC for consistent comparison    
+    from datetime import timezone
+    now_utc = datetime.now(timezone.utc)
+    upcoming_classes = []
+    completed_classes = []
     for scheduled in course.get('scheduled_classes', []):
-        if scheduled.get('is_completed'):
-            completed_count += 1
-    course['completed_classes'] = completed_count
+        scheduled_dt = scheduled.get('datetime')
+        if scheduled_dt:
+            # Ensure scheduled_dt is timezone-aware (assume UTC if naive)
+            if scheduled_dt.tzinfo is None:
+                scheduled_dt = scheduled_dt.replace(tzinfo=timezone.utc)
+            # Check if manually marked as completed OR time has passed
+            if scheduled.get('is_completed') or scheduled_dt <= now_utc:
+                completed_classes.append(scheduled)
+            else:
+                upcoming_classes.append(scheduled)
+    
+    # Store both lists in course object for template
+    course['upcoming_classes'] = upcoming_classes
+    course['completed_classes'] = completed_classes
     
     return render_template('courses/list.html', courses=courses)
 
