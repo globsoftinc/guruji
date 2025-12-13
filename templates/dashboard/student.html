@@ -69,44 +69,84 @@
 
 {% block scripts %}
 <script>
-    window.Clerk.load().then(async () => {
-        if (!window.Clerk.user) {
-            window.location.href = '/dashboard';
+    // Start data fetch early using cached user ID
+    (function () {
+        const cachedUserId = window.AuthCache ? window.AuthCache.getUserId() : null;
+        const cachedData = window.AuthCache ? window.AuthCache.get() : null;
+
+        // Show cached user name immediately
+        if (cachedData && cachedData.userName) {
+            document.getElementById('welcome-text').textContent = `Welcome back, ${cachedData.userName.split(' ')[0]}! 🙏`;
+        }
+
+        // Start API call early if we have cached user ID
+        if (cachedUserId) {
+            window._earlyDataPromise = fetch('/api/dashboard/student-data', {
+                headers: { 'X-Clerk-User-Id': cachedUserId }
+            }).then(res => res.ok ? res.json() : null).catch(() => null);
+
+            window._earlyCertPromise = fetch('/api/my-certificates', {
+                headers: { 'X-Clerk-User-Id': cachedUserId }
+            }).then(res => res.ok ? res.json() : null).catch(() => null);
+        }
+    })();
+
+    function initStudentDashboard() {
+        if (!window.Clerk) {
+            setTimeout(initStudentDashboard, 100);
             return;
         }
 
-        try {
-            const res = await fetch('/api/dashboard/student-data', {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
-
-            if (!res.ok) {
+        window.Clerk.load().then(async () => {
+            if (!window.Clerk.user) {
+                if (window.AuthCache) window.AuthCache.clear();
                 window.location.href = '/dashboard';
                 return;
             }
 
-            const data = await res.json();
-            renderDashboard(data);
-            loadCertificates();
-        } catch (err) {
-            console.error(err);
-        }
-    });
-
-    async function loadCertificates() {
-        try {
-            const res = await fetch('/api/my-certificates', {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
-
-            if (res.ok) {
-                const certificates = await res.json();
-                renderCertificates(certificates);
+            // Sync cache
+            if (window.AuthCache) {
+                window.AuthCache.syncWithClerk(window.Clerk.user);
             }
-        } catch (err) {
-            console.error('Error loading certificates:', err);
-        }
+
+            try {
+                // Use early data if available
+                let data = window._earlyDataPromise ? await window._earlyDataPromise : null;
+
+                if (!data) {
+                    const res = await fetch('/api/dashboard/student-data', {
+                        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                    });
+
+                    if (!res.ok) {
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                    data = await res.json();
+                }
+
+                renderDashboard(data);
+
+                // Load certificates (use early promise if available)
+                let certs = window._earlyCertPromise ? await window._earlyCertPromise : null;
+                if (!certs) {
+                    const certRes = await fetch('/api/my-certificates', {
+                        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                    });
+                    if (certRes.ok) {
+                        certs = await certRes.json();
+                    }
+                }
+                if (certs) {
+                    renderCertificates(certs);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
     }
+
+    initStudentDashboard();
 
     function renderCertificates(certificates) {
         const section = document.getElementById('certificates-section');

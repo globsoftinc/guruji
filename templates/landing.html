@@ -13,7 +13,7 @@
         </h1>
         <p class="hero-subtitle">
             Join live Google Meet classes, access recorded lectures, and learn from expert instructors.
-            Your journey to knowledge starts here. 
+            Your journey to knowledge starts here.
         </p>
         <div class="hero-actions">
             <button id="hero-get-started" class="btn btn-primary btn-lg">
@@ -89,7 +89,8 @@
         <a href="/courses/{{ course._id }}" class="course-card">
             <div class="course-thumbnail">
                 {% if not course.is_completed %}
-                    <div style="position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" title="Live & Active! 🔥">🔥</div>
+                <div style="position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"
+                    title="Live & Active! 🔥">🔥</div>
                 {% endif %}
                 {% if course.thumbnail %}
                 <img src="{{ course.thumbnail }}" alt="{{ course.title }}">
@@ -151,18 +152,21 @@
         <div style="margin-bottom: 1.5rem;">
             <i class="fas fa-certificate" style="font-size: clamp(2rem, 8vw, 3rem); color: var(--primary);"></i>
         </div>
-        <h2 class="section-title" style="font-size: clamp(1.25rem, 5vw, 1.75rem);">Verify a <span class="gradient-text">Certificate</span></h2>
+        <h2 class="section-title" style="font-size: clamp(1.25rem, 5vw, 1.75rem);">Verify a <span
+                class="gradient-text">Certificate</span></h2>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: clamp(0.85rem, 3vw, 1rem);">
             Enter the certificate code to verify its authenticity
         </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 450px; margin: 0 auto; justify-content: center;">
-            <input type="text" id="verify-code-input" placeholder="XXXX-XXXX-XXXX" 
+        <div
+            style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-width: 450px; margin: 0 auto; justify-content: center;">
+            <input type="text" id="verify-code-input" placeholder="XXXX-XXXX-XXXX"
                 style="flex: 1; min-width: 200px; padding: 0.8rem 1rem; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: clamp(0.85rem, 3vw, 1rem); letter-spacing: 1px; text-transform: uppercase;">
             <button onclick="goToVerify()" class="btn btn-primary" style="white-space: nowrap;">
                 <i class="fas fa-search"></i> Verify
             </button>
         </div>
-        <a href="/verify" style="display: inline-block; margin-top: 1rem; color: var(--primary); font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
+        <a href="/verify"
+            style="display: inline-block; margin-top: 1rem; color: var(--primary); font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
             <i class="fas fa-external-link-alt"></i> Go to full verification page
         </a>
     </div>
@@ -181,12 +185,49 @@
 
 {% block scripts %}
 <script>
-    document.getElementById('hero-get-started').addEventListener('click', () => {
-        window.Clerk.user ? window.location.href = '/dashboard' : window.Clerk.openSignUp();
-    });
-    document.getElementById('cta-signup').addEventListener('click', () => {
-        window.Clerk.user ? window.location.href = '/dashboard' : window.Clerk.openSignUp();
-    });
+    // Handle Get Started button - works immediately with cache
+    function handleGetStarted() {
+        // Check cache first for immediate response
+        if (window.AuthCache && window.AuthCache.isLoggedIn()) {
+            window.location.href = '/dashboard';
+            return;
+        }
+
+        // If Clerk is ready, use it
+        if (window.Clerk && window.Clerk.user) {
+            window.location.href = '/dashboard';
+        } else if (window.Clerk && window.Clerk.openSignUp) {
+            window.Clerk.openSignUp();
+        } else {
+            // Clerk not ready - show loading and wait
+            const btn = event.target.closest('button');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                btn.disabled = true;
+            }
+            // Wait for Clerk to be ready
+            const waitForClerk = setInterval(() => {
+                if (window.Clerk) {
+                    clearInterval(waitForClerk);
+                    if (window.Clerk.user) {
+                        window.location.href = '/dashboard';
+                    } else {
+                        window.Clerk.load().then(() => {
+                            if (window.Clerk.user) {
+                                window.location.href = '/dashboard';
+                            } else {
+                                window.Clerk.openSignUp();
+                            }
+                        });
+                    }
+                }
+            }, 100);
+        }
+    }
+
+    // Attach handlers immediately (no waiting for Clerk)
+    document.getElementById('hero-get-started').addEventListener('click', handleGetStarted);
+    document.getElementById('cta-signup').addEventListener('click', handleGetStarted);
 
     function goToVerify() {
         const code = document.getElementById('verify-code-input').value.trim();

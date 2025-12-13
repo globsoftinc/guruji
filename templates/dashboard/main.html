@@ -23,49 +23,84 @@
 
 {% block scripts %}
 <script>
-    window.Clerk.load().then(async () => {
-        const loading = document.getElementById('loading-state');
-        const notLoggedIn = document.getElementById('not-logged-in');
+    // Check cache first for faster decision-making
+    (function () {
+        const cachedUserId = window.AuthCache ? window.AuthCache.getUserId() : null;
 
-        if (!window.Clerk.user) {
-            loading.style.display = 'none';
-            notLoggedIn.style.display = 'block';
+        // If we have cached user ID, start API call early
+        if (cachedUserId) {
+            window._earlyDataPromise = fetch('/api/dashboard/student-data', {
+                headers: { 'X-Clerk-User-Id': cachedUserId }
+            }).then(res => res.ok ? res.json() : null).catch(() => null);
+        }
+    })();
+
+    // Wait for Clerk to confirm auth state
+    function initDashboard() {
+        if (!window.Clerk) {
+            setTimeout(initDashboard, 100);
             return;
         }
 
-        // Check if user exists in our database
-        try {
-            const res = await fetch('/api/dashboard/student-data', {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
+        window.Clerk.load().then(async () => {
+            const loading = document.getElementById('loading-state');
+            const notLoggedIn = document.getElementById('not-logged-in');
 
-            if (res.ok) {
-                const data = await res.json();
+            if (!window.Clerk.user) {
+                // Clear any stale cache
+                if (window.AuthCache) window.AuthCache.clear();
+                loading.style.display = 'none';
+                notLoggedIn.style.display = 'block';
+                return;
+            }
+
+            // Sync cache with actual user
+            if (window.AuthCache) {
+                window.AuthCache.syncWithClerk(window.Clerk.user);
+            }
+
+            // Use early data if available, otherwise fetch fresh
+            try {
+                let data = null;
+                if (window._earlyDataPromise) {
+                    data = await window._earlyDataPromise;
+                }
+
+                if (!data) {
+                    const res = await fetch('/api/dashboard/student-data', {
+                        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                    });
+
+                    if (res.ok) {
+                        data = await res.json();
+                    } else if (res.status === 404) {
+                        window.location.href = '/select-role';
+                        return;
+                    } else {
+                        window.location.href = '/select-role';
+                        return;
+                    }
+                }
+
                 // Redirect based on role and verification status
                 if (data.user.role === 'instructor') {
-                    // Check verification status for instructors
                     if (data.user.verification_status === 'pending') {
                         window.location.href = '/verification-pending';
                     } else if (data.user.verification_status === 'approved') {
                         window.location.href = '/dashboard/instructor';
                     } else {
-                        // Not verified yet or rejected, go to student dashboard
                         window.location.href = '/dashboard/student';
                     }
                 } else {
                     window.location.href = '/dashboard/student';
                 }
-            } else if (res.status === 404) {
-                // User not in database - redirect to role selection page
-                window.location.href = '/select-role';
-            } else {
-                // Other error - redirect to role selection
+            } catch (err) {
+                console.error(err);
                 window.location.href = '/select-role';
             }
-        } catch (err) {
-            console.error(err);
-            window.location.href = '/select-role';
-        }
-    });
+        });
+    }
+
+    initDashboard();
 </script>
 {% endblock %}

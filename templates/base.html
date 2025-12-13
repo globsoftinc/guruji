@@ -18,6 +18,9 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Auth Cache (loads before Clerk for optimistic UI) -->
+    <script src="{{ url_for('static', filename='js/auth-cache.js') }}"></script>
+
     <!-- Clerk -->
     <script async crossorigin="anonymous" data-clerk-publishable-key="{{ config.CLERK_PUBLISHABLE_KEY }}"
         src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js" type="text/javascript"></script>
@@ -56,7 +59,9 @@
                 <span class="logo-icon"></span>
                 <span>Guruji</span>
             </div>
-            <p class="footer-text">©  <script>document.write(new Date().getFullYear())</script> Guruji. Powered by GlobSoft Inc.</p>
+            <p class="footer-text">©
+                <script>document.write(new Date().getFullYear())</script> Guruji. Powered by GlobSoft Inc.
+            </p>
         </div>
     </footer>
 
@@ -64,43 +69,80 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     <script>
-        // Initialize Clerk
-        window.Clerk.load().then(async () => {
-            const userButtonDiv = document.getElementById("user-button");
+            // Render optimistic UI immediately from cache (before Clerk loads)
+            (function () {
+                const userButtonDiv = document.getElementById("user-button");
+                if (userButtonDiv && window.AuthCache) {
+                    window.AuthCache.renderOptimisticUI(userButtonDiv);
+                }
+            })();
 
-            if (window.Clerk.user) {
-                window.Clerk.mountUserButton(userButtonDiv, {
-                    afterSignOutUrl: "/"
-                });
-
-                const dashLink = document.createElement('a');
-                dashLink.href = '/dashboard';
-                dashLink.className = 'nav-link';
-                dashLink.textContent = 'Dashboard';
-                userButtonDiv.parentElement.insertBefore(dashLink, userButtonDiv);
-
-                // Auto-sync profile data to backend
-                try {
-                    const user = window.Clerk.user;
-                    await fetch('/api/auth/sync-profile', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            clerk_user_id: user.id,
-                            email: user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '',
-                            name: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
-                            profile_image: user.imageUrl || null
-                        })
-                    });
-                } catch (e) { console.log('Profile sync skipped'); }
-            } else {
-                const signInBtn = document.createElement('button');
-                signInBtn.className = 'btn btn-primary';
-                signInBtn.textContent = 'Sign In';
-                signInBtn.onclick = () => window.Clerk.openSignIn();
-                userButtonDiv.appendChild(signInBtn);
+        // Initialize Clerk in background and sync when ready
+        function initClerkAuth() {
+            if (!window.Clerk) {
+                // Clerk not loaded yet, retry
+                setTimeout(initClerkAuth, 100);
+                return;
             }
-        });
+
+            window.Clerk.load().then(async () => {
+                const userButtonDiv = document.getElementById("user-button");
+
+                // Sync cache with actual Clerk state
+                if (window.AuthCache) {
+                    window.AuthCache.syncWithClerk(window.Clerk.user);
+                }
+
+                if (window.Clerk.user) {
+                    // Clear any optimistic UI and mount real Clerk user button
+                    userButtonDiv.innerHTML = '';
+                    window.Clerk.mountUserButton(userButtonDiv, {
+                        afterSignOutUrl: "/",
+                        signOutCallback: () => {
+                            // Clear cache on sign out
+                            if (window.AuthCache) {
+                                window.AuthCache.clear();
+                            }
+                        }
+                    });
+
+                    // Add Dashboard link if not already present
+                    if (!userButtonDiv.parentElement.querySelector('a[href="/dashboard"]')) {
+                        const dashLink = document.createElement('a');
+                        dashLink.href = '/dashboard';
+                        dashLink.className = 'nav-link';
+                        dashLink.textContent = 'Dashboard';
+                        userButtonDiv.parentElement.insertBefore(dashLink, userButtonDiv);
+                    }
+
+                    // Auto-sync profile data to backend (non-blocking)
+                    try {
+                        const user = window.Clerk.user;
+                        fetch('/api/auth/sync-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                clerk_user_id: user.id,
+                                email: user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '',
+                                name: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+                                profile_image: user.imageUrl || null
+                            })
+                        });
+                    } catch (e) { console.log('Profile sync skipped'); }
+                } else {
+                    // Not logged in - ensure Sign In button is functional
+                    userButtonDiv.innerHTML = '';
+                    const signInBtn = document.createElement('button');
+                    signInBtn.className = 'btn btn-primary';
+                    signInBtn.textContent = 'Sign In';
+                    signInBtn.onclick = () => window.Clerk.openSignIn();
+                    userButtonDiv.appendChild(signInBtn);
+                }
+            });
+        }
+
+        // Start Clerk initialization
+        initClerkAuth();
     </script>
 
     {% block scripts %}{% endblock %}

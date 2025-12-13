@@ -90,62 +90,108 @@
 <script>
     let dashboardData = null;
 
-    window.Clerk.load().then(async () => {
-        if (!window.Clerk.user) {
-            window.location.href = '/dashboard';
+    // Start data fetch and role verification early using cached user ID
+    (function () {
+        const cachedUserId = window.AuthCache ? window.AuthCache.getUserId() : null;
+        const cachedData = window.AuthCache ? window.AuthCache.get() : null;
+
+        // Show cached user name immediately
+        if (cachedData && cachedData.userName) {
+            document.getElementById('welcome-text').textContent = `Welcome back, ${cachedData.userName.split(' ')[0]}! 🙏`;
+        }
+
+        // Start API calls early if we have cached user ID
+        if (cachedUserId) {
+            window._earlyRolePromise = fetch('/api/verify-role', {
+                headers: { 'X-Clerk-User-Id': cachedUserId }
+            }).then(res => res.ok ? res.json() : null).catch(() => null);
+
+            window._earlyDataPromise = fetch('/api/dashboard/instructor-data', {
+                headers: { 'X-Clerk-User-Id': cachedUserId }
+            }).then(res => res.ok ? res.json() : null).catch(() => null);
+        }
+    })();
+
+    function initInstructorDashboard() {
+        if (!window.Clerk) {
+            setTimeout(initInstructorDashboard, 100);
             return;
         }
 
-        try {
-            // First, verify the user's role and verification status
-            const roleRes = await fetch('/api/verify-role', {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
-
-            if (!roleRes.ok) {
+        window.Clerk.load().then(async () => {
+            if (!window.Clerk.user) {
+                if (window.AuthCache) window.AuthCache.clear();
                 window.location.href = '/dashboard';
                 return;
             }
 
-            const roleData = await roleRes.json();
-
-            // Redirect students to student dashboard
-            if (roleData.role !== 'instructor') {
-                alert('Access denied. Instructor access required.');
-                window.location.href = '/dashboard/student';
-                return;
+            // Sync cache
+            if (window.AuthCache) {
+                window.AuthCache.syncWithClerk(window.Clerk.user);
             }
 
-            // Check verification status for instructors
-            if (roleData.verification_status === 'pending') {
-                window.location.href = '/verification-pending';
-                return;
-            } else if (roleData.verification_status !== 'approved') {
-                alert('Your instructor account is not verified.');
-                window.location.href = '/dashboard/student';
-                return;
-            }
+            try {
+                // Use early role data if available
+                let roleData = window._earlyRolePromise ? await window._earlyRolePromise : null;
 
-            const res = await fetch('/api/dashboard/instructor-data', {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
+                if (!roleData) {
+                    const roleRes = await fetch('/api/verify-role', {
+                        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                    });
 
-            if (!res.ok) {
-                if (res.status === 403) {
+                    if (!roleRes.ok) {
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                    roleData = await roleRes.json();
+                }
+
+                // Redirect students to student dashboard
+                if (roleData.role !== 'instructor') {
                     alert('Access denied. Instructor access required.');
                     window.location.href = '/dashboard/student';
                     return;
                 }
-                window.location.href = '/dashboard';
-                return;
-            }
 
-            dashboardData = await res.json();
-            renderDashboard();
-        } catch (err) {
-            console.error(err);
-        }
-    });
+                // Check verification status for instructors
+                if (roleData.verification_status === 'pending') {
+                    window.location.href = '/verification-pending';
+                    return;
+                } else if (roleData.verification_status !== 'approved') {
+                    alert('Your instructor account is not verified.');
+                    window.location.href = '/dashboard/student';
+                    return;
+                }
+
+                // Use early data if available
+                dashboardData = window._earlyDataPromise ? await window._earlyDataPromise : null;
+
+                if (!dashboardData) {
+                    const res = await fetch('/api/dashboard/instructor-data', {
+                        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                    });
+
+                    if (!res.ok) {
+                        if (res.status === 403) {
+                            alert('Access denied. Instructor access required.');
+                            window.location.href = '/dashboard/student';
+                            return;
+                        }
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+
+                    dashboardData = await res.json();
+                }
+
+                renderDashboard();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
+
+    initInstructorDashboard();
 
     function renderDashboard() {
         // Welcome text
@@ -250,7 +296,7 @@
 
     async function markClassCompleted(courseId, eventId) {
         if (!confirm('Mark this class as completed? It will move to the completed section.')) return;
-        
+
         try {
             const res = await fetch(`/api/courses/${courseId}/mark-class-completed`, {
                 method: 'POST',
@@ -260,7 +306,7 @@
                 },
                 body: JSON.stringify({ event_id: eventId })
             });
-            
+
             if (res.ok) {
                 // Remove the class item from UI
                 const classEl = document.getElementById(`class-${eventId}`);
@@ -285,7 +331,7 @@
 
     async function deleteScheduledClass(courseId, eventId) {
         if (!confirm('Delete this scheduled class? This action cannot be undone.')) return;
-        
+
         try {
             const res = await fetch(`/api/courses/${courseId}/delete-scheduled-class`, {
                 method: 'POST',
@@ -295,7 +341,7 @@
                 },
                 body: JSON.stringify({ event_id: eventId })
             });
-            
+
             if (res.ok) {
                 // Remove the class item from UI
                 const classEl = document.getElementById(`class-${eventId}`);
@@ -349,7 +395,7 @@
 
     async function toggleComplete(id, isCompleted) {
         if (!confirm(`Mark this course as ${isCompleted ? 'Active (In Progress)' : 'Completed'}?`)) return;
-        
+
         const res = await fetch(`/api/courses/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-Clerk-User-Id': window.Clerk.user?.id },
@@ -385,9 +431,9 @@
     async function deleteCourse(id) {
         const course = dashboardData.courses.find(c => c._id === id);
         const courseName = course ? course.title : 'this course';
-        
+
         if (!confirm(`Are you sure you want to delete "${courseName}"?\n\nThis will permanently delete:\n- All course data\n- All enrollments\n- All recordings\n- All notes\n\nThis action cannot be undone!`)) return;
-        
+
         // Double confirmation for safety
         const confirmText = prompt(`Type "DELETE" to confirm deletion of "${courseName}":`);
         if (confirmText !== 'DELETE') {
