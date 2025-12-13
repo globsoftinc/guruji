@@ -172,7 +172,6 @@ def student_data():
                 'recording_count': recording_count,
                 'completed_classes_count': completed_classes_count,
                 'progress_percent': progress_percent,
-                 'attendance_percent': attendance_percent,
                 'thumbnail': course.get('thumbnail'),
                 'is_completed': course.get('is_completed', False)
             })
