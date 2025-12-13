@@ -30,7 +30,7 @@ def list_courses():
     for scheduled in course.get('scheduled_classes', []):
         if scheduled.get('is_completed'):
             completed_count += 1
-    course['completed_classes_count'] = completed_count
+    course['completed_classes'] = completed_count
     
     return render_template('courses/list.html', courses=courses)
 
