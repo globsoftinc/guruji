@@ -17,13 +17,6 @@ def landing():
         instructor = User.find_by_id(course['instructor_id'])
         course['instructor'] = instructor
         course['student_count'] = Enrollment.count_by_course(course['_id'])
-        
-    # Count manually marked completed classes only
-    completed_count = 0
-    for scheduled in course.get('scheduled_classes', []):
-        if scheduled.get('is_completed'):
-            completed_count += 1
-    course['completed_classes'] = completed_count
     
     return render_template('landing.html', courses=courses)
 
