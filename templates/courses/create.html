@@ -55,7 +55,12 @@
 
 {% block scripts %}
 <script>
-    window.Clerk.load().then(async () => {
+function initCreatePage() {
+        if (!window.Clerk) {
+            setTimeout(initCreatePage, 100);
+            return;
+        }
+        window.Clerk.load().then(async () => {
         const loadingState = document.getElementById('loading-state');
         const formContainer = document.getElementById('form-container');
         const notAuthorized = document.getElementById('not-authorized');
@@ -139,5 +144,7 @@
             }
         });
     });
+    }
+    initCreatePage();
 </script>
 {% endblock %}
