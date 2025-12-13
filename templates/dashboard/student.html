@@ -229,12 +229,12 @@
                 <div class="card-thumbnail">
                     ${c.thumbnail ? `<img src="${c.thumbnail}">` : '<div class="placeholder"><i class="fas fa-book-open"></i></div>'}
                     ${c.is_completed ? '<div class="completed-badge" style="position: absolute; top: 10px; right: 10px; background: #00c853; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;"><i class="fas fa-check-circle"></i> Completed</div>' : ''}
-                    <div class="progress-bar"><div class="progress" style="width: ${c.progress_percent}%"></div></div>
+                    <div class="progress-bar"><div class="progress" style="width: ${c.attendance_percent}%"></div></div>
                 </div>
                 <div class="card-content">
                     <h3>${c.title}</h3>
                     <p class="instructor">by ${c.instructor_name}</p>
-                    <div class="card-meta"><span><i class="fas fa-video"></i> ${c.completed_classes_count || 0} lessons</span><span class="progress-text">${c.progress_percent}%</span></div>
+                    <div class="card-meta"><span><i class="fas fa-video"></i> ${c.completed_classes_count || 0} lessons</span><span class="progress-text">${c.attendance_percent}%</span></div>
                 </div>
             </a>
         `).join('');
