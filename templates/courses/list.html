@@ -31,7 +31,7 @@
                     <span><i class="fas fa-user"></i> {{ course.instructor.name if course.instructor else 'Instructor'
                         }}</span>
                     <span><i class="fas fa-users"></i> {{ course.student_count or 0 }} students</span>
-                    <span><i class="fas fa-video"></i> {{ (course.completed_classes|length) if course.completed_classes else 0 }} lessons</span>
+
                 </div>
             </div>
         </a>
