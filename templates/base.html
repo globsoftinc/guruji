@@ -7,8 +7,8 @@
     <title>{% block title %}Guruji{% endblock %}</title>
     <meta name="description"
         content="{% block description %}Learn from the best with live Google Meet classes and recorded lectures{% endblock %}">
-    
-        <!-- Remix Icons (for social icons) -->
+
+    <!-- Remix Icons (for social icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css">
 
     <!-- Fonts -->
@@ -20,12 +20,18 @@
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-        <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180"
+        href="{{ url_for('static', filename='favicons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32"
+        href="{{ url_for('static', filename='favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16"
+        href="{{ url_for('static', filename='favicons/favicon-16x16.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='favicons/site.webmanifest') }}">
+
+    <!-- Browser Detection (for in-app browser auth handling) -->
+    <script src="{{ url_for('static', filename='js/browser-detect.js') }}"></script>
 
     <!-- Auth Cache (loads before Clerk for optimistic UI) -->
     <script src="{{ url_for('static', filename='js/auth-cache.js') }}"></script>
@@ -65,7 +71,8 @@
     <footer class="footer" id="footer">
         <div class="footer__container container grid">
             <div>
-                <img src="{{ url_for('static', filename='img/guruji.png') }}" height="20%" width="20%" alt="Guruji Logo"> <br>
+                <img src="{{ url_for('static', filename='img/guruji.png') }}" height="20%" width="20%"
+                    alt="Guruji Logo"> <br>
                 <a href="/" class="footer__logo">
                     Guruji
                 </a>
@@ -84,7 +91,8 @@
                         <a href="https://x.com/globsoftinc" target="_blank" class="footer__social-link">
                             <i class="ri-twitter-x-line"></i>
                         </a>
-                        <a href="https://www.linkedin.com/company/globsoftinc" target="_blank" class="footer__social-link">
+                        <a href="https://www.linkedin.com/company/globsoftinc" target="_blank"
+                            class="footer__social-link">
                             <i class="ri-linkedin-fill"></i>
                         </a>
                         <a href="https://youtube.com/@globsoftinc" target="_blank" class="footer__social-link">
@@ -105,7 +113,7 @@
                         <li><a href="https://globsoft.tech/products.html" class="footer__link">Products</a></li>
                     </ul>
                 </div>
-<div>
+                <div>
                     <h3 class="footer__title">PRODUCTS</h3>
                     <ul class="footer__links">
                         <li><a href="https://globweb.globsoft.tech" class="footer__link">GlobWeb</a></li>
@@ -114,20 +122,26 @@
                         <li><a href="https://clearcut.globsoft.tech" class="footer__link">ClearCut</a></li>
                         <li><a href="https://globsoft.tech/products.html" class="footer__link">Others</a></li>
                     </ul>
-</div>
+                </div>
                 <div>
                     <h3 class="footer__title">LEGAL</h3>
                     <ul class="footer__links">
-                        <li><a href="https://globsoft.tech/privacy.html" target="_blank" class="footer__link">Privacy Policy</a></li>
-                        <li><a href="https://globsoft.tech/terms.html" target="_blank" class="footer__link">Terms of Service</a></li>
-                        <li><a href="https://globsoft.tech/terms.html" target="_blank" class="footer__link">Acceptable Use</a></li>
+                        <li><a href="https://globsoft.tech/privacy.html" target="_blank" class="footer__link">Privacy
+                                Policy</a></li>
+                        <li><a href="https://globsoft.tech/terms.html" target="_blank" class="footer__link">Terms of
+                                Service</a></li>
+                        <li><a href="https://globsoft.tech/terms.html" target="_blank" class="footer__link">Acceptable
+                                Use</a></li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div class="footer__copy">
-            <p>© <script>document.write(new Date().getFullYear())</script> Guruji. Powered by <a href="https://globsoft.tech/" target="_blank">GlobSoft Inc.</a></p>
+            <p>©
+                <script>document.write(new Date().getFullYear())</script> Guruji. Powered by <a
+                    href="https://globsoft.tech/" target="_blank">GlobSoft Inc.</a>
+            </p>
         </div>
     </footer>
 
@@ -196,25 +210,32 @@
                         });
                     } catch (e) { console.log('Profile sync skipped'); }
                 } else {
-    // Not logged in - show Sign In or Sign Up based on account status
-    userButtonDiv.innerHTML = '';
-    const signInBtn = document.createElement('button');
-    signInBtn.className = 'btn btn-primary';
-    
-    const hasAccount = window.AuthCache && window.AuthCache.hasAccount();
-    signInBtn.innerHTML = hasAccount 
-        ? '<i class="fas fa-sign-in-alt"></i> Sign In' 
-        : '<i class="fas fa-user-plus"></i> Sign Up';
-    
-    signInBtn.onclick = () => {
-        if (hasAccount) {
-            window.Clerk.openSignIn();
-        } else {
-            window.Clerk.openSignUp();
-        }
-    };
-    userButtonDiv.appendChild(signInBtn);
-}
+                    // Not logged in - show Sign In or Sign Up based on account status
+                    userButtonDiv.innerHTML = '';
+                    const signInBtn = document.createElement('button');
+                    signInBtn.className = 'btn btn-primary';
+
+                    const hasAccount = window.AuthCache && window.AuthCache.hasAccount();
+                    signInBtn.innerHTML = hasAccount
+                        ? '<i class="fas fa-sign-in-alt"></i> Sign In'
+                        : '<i class="fas fa-user-plus"></i> Sign Up';
+
+                    signInBtn.onclick = () => {
+                        // Use BrowserDetect for in-app browser compatible auth
+                        if (window.BrowserDetect) {
+                            if (hasAccount) {
+                                window.BrowserDetect.openSignIn();
+                            } else {
+                                window.BrowserDetect.openSignUp();
+                            }
+                        } else if (hasAccount) {
+                            window.Clerk.openSignIn();
+                        } else {
+                            window.Clerk.openSignUp();
+                        }
+                    };
+                    userButtonDiv.appendChild(signInBtn);
+                }
             });
         }
 

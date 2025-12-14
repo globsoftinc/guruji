@@ -109,10 +109,10 @@
                 <div class="course-meta">
                     <span><i class="fas fa-user"></i> {{ course.instructor.name if course.instructor else 'Instructor'
                         }}</span>
-                        <span class="certification-badge {{ 'free-cert' if course.price == 0 else 'paid-cert' }}">
-        <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
-    </span>
-                    
+                    <span class="certification-badge {{ 'free-cert' if course.price == 0 else 'paid-cert' }}">
+                        <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
+                    </span>
+
                 </div>
             </div>
         </a>
@@ -196,16 +196,29 @@
             return;
         }
 
-        // If Clerk is ready, use it
+        // If Clerk is ready and user is logged in, go to dashboard
         if (window.Clerk && window.Clerk.user) {
             window.location.href = '/dashboard';
-        } else if (window.Clerk) {
-    // Show Sign In if user has account, otherwise Sign Up
-    if (window.AuthCache && window.AuthCache.hasAccount()) {
-        window.Clerk.openSignIn();
-    } else if (window.Clerk.openSignUp) {
-        window.Clerk.openSignUp();
-    }
+            return;
+        }
+
+        // Use BrowserDetect for in-app browser compatible auth
+        if (window.BrowserDetect) {
+            if (window.AuthCache && window.AuthCache.hasAccount()) {
+                window.BrowserDetect.openSignIn();
+            } else {
+                window.BrowserDetect.openSignUp();
+            }
+            return;
+        }
+
+        // Fallback: Wait for Clerk if BrowserDetect somehow failed
+        if (window.Clerk) {
+            if (window.AuthCache && window.AuthCache.hasAccount()) {
+                window.Clerk.openSignIn();
+            } else if (window.Clerk.openSignUp) {
+                window.Clerk.openSignUp();
+            }
         } else {
             // Clerk not ready - show loading and wait
             const btn = event.target.closest('button');
@@ -220,13 +233,12 @@
                     if (window.Clerk.user) {
                         window.location.href = '/dashboard';
                     } else {
-                        window.Clerk.load().then(() => {
-                            if (window.Clerk.user) {
-                                window.location.href = '/dashboard';
-                            } else {
-                                window.Clerk.openSignUp();
-                            }
-                        });
+                        // Use BrowserDetect if available
+                        if (window.BrowserDetect) {
+                            window.BrowserDetect.openSignUp();
+                        } else {
+                            window.Clerk.openSignUp();
+                        }
                     }
                 }
             }, 100);

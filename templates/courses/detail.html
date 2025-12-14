@@ -13,10 +13,11 @@
             <div class="course-info">
                 <span><i class="fas fa-user"></i> {{ instructor.name if instructor else 'Instructor' }}</span>
                 <span><i class="fas fa-users"></i> {{ student_count }} students</span>
-                <span><i class="fas fa-video"></i> {{ (course.completed_classes|length) if course.completed_classes else 0 }} lessons</span>
+                <span><i class="fas fa-video"></i> {{ (course.completed_classes|length) if course.completed_classes else
+                    0 }} lessons</span>
                 <span class="certification-badge {{ 'free-cert' if course.price == 0 else 'paid-cert' }}">
-        <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
-    </span>
+                    <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
+                </span>
             </div>
             <div id="enroll-section" class="enroll-section">
                 <button id="enroll-btn" class="btn btn-primary btn-lg" style="display: none;">
@@ -29,7 +30,8 @@
                 <div id="completed-badge" class="enrolled-badge completed" style="display: none;">
                     <i class="fas fa-trophy"></i> Course Completed
                 </div>
-                <button id="attendance-btn" class="btn btn-primary btn-lg attendance-btn enrolled-only" style="display: none;">
+                <button id="attendance-btn" class="btn btn-primary btn-lg attendance-btn enrolled-only"
+                    style="display: none;">
                     <i class="fas fa-hand-paper"></i> Mark Attendance
                 </button>
                 <div id="loading-enroll" class="btn btn-ghost btn-lg">
@@ -101,9 +103,9 @@
         {% endif %}
 
         <div class="content-section">
-            <h2><i class="fas fa-video"></i> <span>Course Content</span> <button class="btn btn-sm btn-ghost instructor-only h2-btn"
-                    onclick="openAddRecordingModal()" style="display: none;"><i
-                        class="fas fa-plus"></i></button></h2>
+            <h2><i class="fas fa-video"></i> <span>Course Content</span> <button
+                    class="btn btn-sm btn-ghost instructor-only h2-btn" onclick="openAddRecordingModal()"
+                    style="display: none;"><i class="fas fa-plus"></i></button></h2>
             <div class="recordings-list" id="recordings-list">
                 <div class="empty-state small"><i class="fas fa-spinner fa-spin"></i>
                     <p>Loading recordings...</p>
@@ -113,9 +115,9 @@
 
         <!-- Notes Section -->
         <div class="content-section">
-            <h2><i class="fas fa-file-pdf"></i> <span>Course Notes</span> <button class="btn btn-sm btn-ghost instructor-only h2-btn"
-                    onclick="openAddNoteModal()" style="display: none;"><i
-                        class="fas fa-plus"></i></button></h2>
+            <h2><i class="fas fa-file-pdf"></i> <span>Course Notes</span> <button
+                    class="btn btn-sm btn-ghost instructor-only h2-btn" onclick="openAddNoteModal()"
+                    style="display: none;"><i class="fas fa-plus"></i></button></h2>
             <div class="notes-list" id="notes-list">
                 <div class="empty-state small"><i class="fas fa-spinner fa-spin"></i>
                     <p>Loading notes...</p>
@@ -254,7 +256,8 @@
 
 <!-- PDF Viewer Modal -->
 <div id="pdf-modal" class="modal" style="display: none;">
-    <div id="pdf-container" class="modal-content" style="max-width: 900px; width: 95%; height: 85vh; padding: 0; background: #000;">
+    <div id="pdf-container" class="modal-content"
+        style="max-width: 900px; width: 95%; height: 85vh; padding: 0; background: #000;">
         <div id="pdf-header" class="modal-header" style="background: var(--bg-secondary); padding: 1rem;">
             <h3 id="pdf-title" style="margin: 0; color: var(--text-primary);"><i class="fas fa-file-pdf"></i>
                 <span>Document</span>
@@ -275,8 +278,10 @@
 
 <!-- Video Player Modal -->
 <div id="video-modal" class="modal" style="display: none;">
-    <div id="video-modal-content" class="modal-content" style="max-width: 900px; width: 95%; padding: 0; background: #000;">
-        <div id="video-header" class="modal-header" style="background: var(--bg-secondary); padding: 1rem; transition: opacity 0.3s;">
+    <div id="video-modal-content" class="modal-content"
+        style="max-width: 900px; width: 95%; padding: 0; background: #000;">
+        <div id="video-header" class="modal-header"
+            style="background: var(--bg-secondary); padding: 1rem; transition: opacity 0.3s;">
             <h3 id="video-title" style="margin: 0; color: var(--text-primary);"><i class="fas fa-play-circle"></i>
                 <span>Video</span>
             </h3>
@@ -288,7 +293,8 @@
                     style="font-size: 1.5rem; background: none; border: none; color: var(--text-primary); cursor: pointer;">&times;</button>
             </div>
         </div>
-        <div id="video-container" style="position: relative; padding-top: 56.25%; background: #000; cursor: pointer;" onclick="toggleVideoHeader()">
+        <div id="video-container" style="position: relative; padding-top: 56.25%; background: #000; cursor: pointer;"
+            onclick="toggleVideoHeader()">
             <iframe id="video-iframe"
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; pointer-events: auto;"
                 allow="autoplay; encrypted-media; fullscreen" allowfullscreen>
@@ -369,12 +375,12 @@
                 if (enrolledBadge) enrolledBadge.style.display = 'inline-flex';
                 if (enrollBtn) enrollBtn.style.display = 'none';
                 updateEnrolledVisibility();
-                
+
                 // Check attendance status and show button if active (only if course not completed)
                 if (!isCourseCompleted) {
                     checkAttendanceStatus();
                 }
-                
+
                 // Load certificate info
                 loadCertificateInfo();
             } else {
@@ -389,7 +395,7 @@
                 if (enrolledBadge) enrolledBadge.style.display = 'none';
                 updateNotEnrolledVisibility();
             }
-            
+
             // Load notes and recordings after enrollment check is complete
             loadNotes();
             loadRecordings();
@@ -411,7 +417,7 @@
                 headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
             });
             const data = await res.json();
-            
+
             const attendanceBtn = document.getElementById('attendance-btn');
             if (data.attendance_active && attendanceBtn) {
                 attendanceBtn.style.display = 'inline-flex';
@@ -423,18 +429,18 @@
 
     document.getElementById('attendance-btn')?.addEventListener('click', async () => {
         if (!window.Clerk.user) return;
-        
+
         const btn = document.getElementById('attendance-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Marking...';
-        
+
         try {
             const res = await fetch(`/api/courses/${courseId}/mark-attendance`, {
                 method: 'POST',
                 headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
             });
             const data = await res.json();
-            
+
             if (data.success) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Attendance Marked!';
                 btn.style.background = '#00c853';
@@ -456,32 +462,33 @@
         const certAttendance = document.getElementById('cert-attendance');
         const certPercentage = document.getElementById('cert-percentage');
         const certAction = document.getElementById('cert-action');
-        
+
         // Show certificate section for enrolled students
         certSection.style.display = 'block';
-        
+
         try {
             // Get attendance info
             const attendanceRes = await fetch(`/api/courses/${courseId}/my-attendance`, {
                 headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
             });
             const attendanceData = await attendanceRes.json();
-            
+
             const attendanceCount = attendanceData.attendance_count || 0;
-            const totalClasses = {{ (course.completed_classes|length) if course.completed_classes else 0 }};
-            const percentage = totalClasses > 0 ? Math.round((attendanceCount / totalClasses) * 100) : 0;
-            
-            certAttendance.textContent = `${attendanceCount}/${totalClasses}`;
-            certPercentage.textContent = `${percentage}%`;
-            
-            // Check if certificate already exists
-            const certRes = await fetch(`/api/courses/${courseId}/certificate`, {
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
-            
-            if (certRes.ok) {
-                const cert = await certRes.json();
-                certAction.innerHTML = `
+            const totalClasses = {{ (course.completed_classes | length) if course.completed_classes else 0
+        }};
+    const percentage = totalClasses > 0 ? Math.round((attendanceCount / totalClasses) * 100) : 0;
+
+    certAttendance.textContent = `${attendanceCount}/${totalClasses}`;
+    certPercentage.textContent = `${percentage}%`;
+
+    // Check if certificate already exists
+    const certRes = await fetch(`/api/courses/${courseId}/certificate`, {
+        headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+    });
+
+    if (certRes.ok) {
+        const cert = await certRes.json();
+        certAction.innerHTML = `
                     <div class="cert-issued">
                         <i class="fas fa-check-circle"></i> Certificate Issued
                         <span class="cert-code">Code: ${cert.certificate_code}</span>
@@ -490,33 +497,33 @@
                         <i class="fas fa-eye"></i> View Certificate
                     </a>
                 `;
-            } else if (isCourseCompleted) {
-                // Course is completed, check if passed (>= 75% attendance)
-                if (percentage >= 75) {
-                    certAction.innerHTML = `
+    } else if (isCourseCompleted) {
+        // Course is completed, check if passed (>= 75% attendance)
+        if (percentage >= 75) {
+            certAction.innerHTML = `
                         <button onclick="generateCertificate()" class="btn btn-primary btn-lg">
                             <i class="fas fa-certificate"></i> Generate Certificate
                         </button>
                     `;
-                } else {
-                    certAction.innerHTML = `
+        } else {
+            certAction.innerHTML = `
                         <div class="cert-failed">
                             <i class="fas fa-times-circle"></i> You didn't complete the whole course
                             <p>Minimum 75% attendance required to get certificate.</p>
                         </div>
                     `;
-                }
-            } else {
-                // Course not completed yet
-                certAction.innerHTML = `
+        }
+    } else {
+        // Course not completed yet
+        certAction.innerHTML = `
                     <div class="cert-pending">
                         <i class="fas fa-clock"></i> Certificate will be available after course completion
                     </div>
                 `;
-            }
+    }
         } catch (err) {
-            console.error('Error loading certificate info:', err);
-        }
+        console.error('Error loading certificate info:', err);
+    }
     }
 
     async function generateCertificate() {
@@ -525,7 +532,7 @@
                 method: 'POST',
                 headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
             });
-            
+
             if (res.ok) {
                 const cert = await res.json();
                 alert(`Certificate generated! 🎉\nYour certificate code: ${cert.certificate_code}`);
@@ -539,32 +546,38 @@
         }
     }
 
-   function updateEnrolledVisibility() {
-    document.querySelectorAll('.enrolled-only').forEach(el => {
-        if (el.id !== 'attendance-btn') {
-            // Use block for divs that are content sections, inline-flex for others (buttons, badges)
-            const isBlockElement = el.tagName === 'DIV' && (el.classList.contains('content-section') || el.id === 'certificate-section');
-            el.style.display = isBlockElement ? 'block' : 'inline-flex';
-        }
-    });
-    document.querySelectorAll('.not-enrolled').forEach(el => el.style.display = 'none');
-}
+    function updateEnrolledVisibility() {
+        document.querySelectorAll('.enrolled-only').forEach(el => {
+            if (el.id !== 'attendance-btn') {
+                // Use block for divs that are content sections, inline-flex for others (buttons, badges)
+                const isBlockElement = el.tagName === 'DIV' && (el.classList.contains('content-section') || el.id === 'certificate-section');
+                el.style.display = isBlockElement ? 'block' : 'inline-flex';
+            }
+        });
+        document.querySelectorAll('.not-enrolled').forEach(el => el.style.display = 'none');
+    }
     // Function to show not-enrolled state (lock icons)
     function updateNotEnrolledVisibility() {
         document.querySelectorAll('.enrolled-only').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.not-enrolled').forEach(el => el.style.display = 'inline-flex');
     }
 
-document.getElementById('enroll-btn')?.addEventListener('click', async () => {
-    if (!window.Clerk.user) { 
-        // Mark account status and open appropriate auth modal
-        if (window.AuthCache && window.AuthCache.hasAccount()) {
-            window.Clerk.openSignIn();
-        } else {
-            window.Clerk.openSignUp();
+    document.getElementById('enroll-btn')?.addEventListener('click', async () => {
+        if (!window.Clerk.user) {
+            // Use BrowserDetect for in-app browser compatible auth
+            if (window.BrowserDetect) {
+                if (window.AuthCache && window.AuthCache.hasAccount()) {
+                    window.BrowserDetect.openSignIn();
+                } else {
+                    window.BrowserDetect.openSignUp();
+                }
+            } else if (window.AuthCache && window.AuthCache.hasAccount()) {
+                window.Clerk.openSignIn();
+            } else {
+                window.Clerk.openSignUp();
+            }
+            return;
         }
-        return; 
-    }
         const res = await fetch(`/api/enroll/${courseId}`, {
             method: 'POST',
             headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
@@ -790,9 +803,9 @@ document.getElementById('enroll-btn')?.addEventListener('click', async () => {
             headers: { 'Content-Type': 'application/json', 'X-Clerk-User-Id': window.Clerk.user.id },
             body: JSON.stringify({ title, drive_link: link, duration })
         });
-        if (res.ok) { 
+        if (res.ok) {
             alert('Recording added! 🎉');
-            closeAddRecordingModal(); 
+            closeAddRecordingModal();
             document.getElementById('add-recording-form').reset();
             loadRecordings();
         }
@@ -829,9 +842,9 @@ document.getElementById('enroll-btn')?.addEventListener('click', async () => {
                         <i class="fas fa-play"></i> Watch
                     </button>
                     ${isInstructor ?
-                    `<button onclick="deleteRecording('${rec._id}')" class="btn btn-sm btn-ghost recording-action" style="color: #ff4444; margin-left: 0.5rem;"><i class="fas fa-trash"></i></button>`
-                    : `<button class="btn btn-sm btn-ghost recording-action not-enrolled" disabled><i class="fas fa-lock"></i></button>`
-                }
+                        `<button onclick="deleteRecording('${rec._id}')" class="btn btn-sm btn-ghost recording-action" style="color: #ff4444; margin-left: 0.5rem;"><i class="fas fa-trash"></i></button>`
+                        : `<button class="btn btn-sm btn-ghost recording-action not-enrolled" disabled><i class="fas fa-lock"></i></button>`
+                    }
                 </div>
             `}).join('');
 
