@@ -244,6 +244,358 @@
     </script>
 
     {% block scripts %}{% endblock %}
+
+    <!-- Report a Bug FAB -->
+    <button class="bug-report-fab" id="bugReportFab" title="Report a Bug" aria-label="Report a Bug">
+        <i class="fas fa-bug"></i>
+    </button>
+
+    <!-- Bug Report Modal -->
+    <div class="bug-report-overlay" id="bugReportOverlay">
+        <div class="bug-report-modal">
+            <div class="bug-report-header">
+                <h3><i class="fas fa-bug"></i> Report a Bug</h3>
+                <button class="bug-report-close" id="bugReportClose" aria-label="Close">&times;</button>
+            </div>
+            <form id="bugReportForm" enctype="multipart/form-data">
+                <div class="bug-report-field">
+                    <label for="bugReportName">Your Name *</label>
+                    <input type="text" id="bugReportName" name="name" required placeholder="Enter your name">
+                </div>
+                <div class="bug-report-field">
+                    <label for="bugReportEmail">Email Address *</label>
+                    <input type="email" id="bugReportEmail" name="email" required placeholder="you@example.com">
+                </div>
+                <div class="bug-report-field">
+                    <label for="bugReportPage">Page URL</label>
+                    <input type="text" id="bugReportPage" name="page" readonly>
+                </div>
+                <div class="bug-report-field">
+                    <label for="bugReportDesc">Bug Description *</label>
+                    <textarea id="bugReportDesc" name="message" required rows="4"
+                        placeholder="Please describe the bug you encountered..."></textarea>
+                </div>
+                <div class="bug-report-field">
+                    <label for="bugReportAttachment">Attachment (optional)</label>
+                    <input type="file" id="bugReportAttachment" name="attachment" accept="image/*,.pdf,.txt,.log">
+                    <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">Max 5MB. Images, PDF,
+                        or text files.</small>
+                </div>
+                <div class="bug-report-actions">
+                    <button type="button" class="btn btn-ghost" id="bugReportCancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="bugReportSubmit">
+                        <i class="fas fa-paper-plane"></i> Submit Report
+                    </button>
+                </div>
+            </form>
+            <div class="bug-report-success" id="bugReportSuccess" style="display: none;">
+                <div class="bug-report-success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4>Thank You!</h4>
+                <p>Your bug report has been submitted successfully. We'll look into it soon.</p>
+                <button class="btn btn-primary" id="bugReportDone">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Bug Report FAB Styles */
+        .bug-report-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(232, 93, 4, 0.4);
+            z-index: 9998;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bug-report-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(232, 93, 4, 0.5);
+        }
+
+        .bug-report-fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Bug Report Overlay */
+        .bug-report-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bug-report-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Bug Report Modal */
+        .bug-report-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .bug-report-overlay.active .bug-report-modal {
+            transform: translateY(0);
+        }
+
+        .bug-report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bug-report-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .bug-report-header h3 i {
+            color: var(--primary);
+        }
+
+        .bug-report-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.75rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            transition: color 0.2s;
+        }
+
+        .bug-report-close:hover {
+            color: var(--text-primary);
+        }
+
+        #bugReportForm {
+            padding: 1.5rem;
+        }
+
+        .bug-report-field {
+            margin-bottom: 1rem;
+        }
+
+        .bug-report-field label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .bug-report-field input,
+        .bug-report-field textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .bug-report-field input:focus,
+        .bug-report-field textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .bug-report-field input[readonly] {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .bug-report-field input[type="file"] {
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+
+        .bug-report-field textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .bug-report-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        /* Success State */
+        .bug-report-success {
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .bug-report-success-icon {
+            font-size: 4rem;
+            color: var(--success);
+            margin-bottom: 1rem;
+        }
+
+        .bug-report-success h4 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .bug-report-success p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .bug-report-fab {
+                bottom: 16px;
+                right: 16px;
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+
+            .bug-report-modal {
+                max-height: 85vh;
+            }
+
+            .bug-report-header {
+                padding: 1rem 1.25rem;
+            }
+
+            #bugReportForm {
+                padding: 1.25rem;
+            }
+
+            .bug-report-actions {
+                flex-direction: column;
+            }
+
+            .bug-report-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <script>
+        (function () {
+            // Bug Report FAB functionality
+            const fab = document.getElementById('bugReportFab');
+            const overlay = document.getElementById('bugReportOverlay');
+            const closeBtn = document.getElementById('bugReportClose');
+            const cancelBtn = document.getElementById('bugReportCancel');
+            const form = document.getElementById('bugReportForm');
+            const successDiv = document.getElementById('bugReportSuccess');
+            const doneBtn = document.getElementById('bugReportDone');
+            const pageInput = document.getElementById('bugReportPage');
+
+            function openModal() {
+                pageInput.value = window.location.href;
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+                // Reset form after animation
+                setTimeout(() => {
+                    form.reset();
+                    form.style.display = 'block';
+                    successDiv.style.display = 'none';
+                }, 300);
+            }
+
+            fab.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+            doneBtn.addEventListener('click', closeModal);
+
+            // Close on overlay click
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeModal();
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+
+            // Form submission with FormSubmit.co
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = document.getElementById('bugReportSubmit');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                submitBtn.disabled = true;
+
+                const formData = new FormData(form);
+                formData.append('_subject', '[Bug Report - G5tO7mMG] Bug from ' + formData.get('name'));
+                formData.append('_captcha', 'false');
+                formData.append('_template', 'table');
+
+                try {
+                    const response = await fetch('https://formsubmit.co/ajax/info.globsoft@gmail.com', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        form.style.display = 'none';
+                        successDiv.style.display = 'block';
+                    } else {
+                        throw new Error('Submission failed');
+                    }
+                } catch (error) {
+                    alert('Failed to send report. Please try again or contact support directly.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        })();
+    </script>
 </body>
 
 </html>
