@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Sign In - Guruji{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-header">
+            <a href="/" class="auth-logo">
+                <span class="logo-icon"></span>
+                <span class="logo-text">Guruji</span>
+            </a>
+            <h1>Welcome Back</h1>
+            <p>Sign in to continue your learning journey</p>
+        </div>
+
+        <!-- Clerk Sign In Component will be mounted here -->
+        <div id="clerk-signin" class="clerk-component">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading sign in...</p>
+            </div>
+        </div>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a
+                    href="/sign-up{% if redirect_url %}?redirect_url={{ redirect_url }}{% endif %}">Sign Up</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--bg-primary);
+    }
+
+    .auth-container {
+        width: 100%;
+        max-width: 450px;
+        background: var(--bg-secondary);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border);
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .auth-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+        margin-bottom: 1.5rem;
+    }
+
+    .auth-header h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .auth-header p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .clerk-component {
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .loading-spinner i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary);
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .auth-footer p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .auth-footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+
+    /* Override Clerk's default styles to match dark theme */
+    .cl-card {
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const redirectUrl = '{{ redirect_url | default("/dashboard", true) }}';
+
+    function initSignIn() {
+        if (!window.Clerk) {
+            setTimeout(initSignIn, 100);
+            return;
+        }
+
+        window.Clerk.load().then(() => {
+            // If already signed in, redirect
+            if (window.Clerk.user) {
+                window.location.href = redirectUrl;
+                return;
+            }
+
+            // Mount the sign-in component
+            const container = document.getElementById('clerk-signin');
+            container.innerHTML = ''; // Clear loading spinner
+
+            window.Clerk.mountSignIn(container, {
+                afterSignInUrl: redirectUrl,
+                afterSignUpUrl: redirectUrl,
+                signUpUrl: '/sign-up' + (redirectUrl !== '/dashboard' ? '?redirect_url=' + encodeURIComponent(redirectUrl) : '')
+            });
+        });
+    }
+
+    initSignIn();
+</script>
+{% endblock %}

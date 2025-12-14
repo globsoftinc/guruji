@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from datetime import datetime
 from app.models.course import Course
 from app.models.user import User
@@ -25,6 +25,20 @@ def landing():
 def verification_pending():
     """Show verification pending page for instructors awaiting approval."""
     return render_template('verification_pending.html')
+
+
+@main_bp.route('/sign-in')
+def sign_in():
+    """Sign in page with embedded Clerk component (for in-app browsers)."""
+    redirect_url = request.args.get('redirect_url', '/dashboard')
+    return render_template('sign-in.html', redirect_url=redirect_url)
+
+
+@main_bp.route('/sign-up')
+def sign_up():
+    """Sign up page with embedded Clerk component (for in-app browsers)."""
+    redirect_url = request.args.get('redirect_url', '/dashboard')
+    return render_template('sign-up.html', redirect_url=redirect_url)
 
 
 @main_bp.route('/health')
