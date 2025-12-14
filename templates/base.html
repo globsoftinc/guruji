@@ -196,14 +196,25 @@
                         });
                     } catch (e) { console.log('Profile sync skipped'); }
                 } else {
-                    // Not logged in - ensure Sign In button is functional
-                    userButtonDiv.innerHTML = '';
-                    const signInBtn = document.createElement('button');
-                    signInBtn.className = 'btn btn-primary';
-                    signInBtn.textContent = 'Sign In';
-                    signInBtn.onclick = () => window.Clerk.openSignIn();
-                    userButtonDiv.appendChild(signInBtn);
-                }
+    // Not logged in - show Sign In or Sign Up based on account status
+    userButtonDiv.innerHTML = '';
+    const signInBtn = document.createElement('button');
+    signInBtn.className = 'btn btn-primary';
+    
+    const hasAccount = window.AuthCache && window.AuthCache.hasAccount();
+    signInBtn.innerHTML = hasAccount 
+        ? '<i class="fas fa-sign-in-alt"></i> Sign In' 
+        : '<i class="fas fa-user-plus"></i> Sign Up';
+    
+    signInBtn.onclick = () => {
+        if (hasAccount) {
+            window.Clerk.openSignIn();
+        } else {
+            window.Clerk.openSignUp();
+        }
+    };
+    userButtonDiv.appendChild(signInBtn);
+}
             });
         }
 

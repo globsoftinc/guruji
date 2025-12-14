@@ -555,8 +555,16 @@
         document.querySelectorAll('.not-enrolled').forEach(el => el.style.display = 'inline-flex');
     }
 
-    document.getElementById('enroll-btn')?.addEventListener('click', async () => {
-        if (!window.Clerk.user) { window.Clerk.openSignIn(); return; }
+document.getElementById('enroll-btn')?.addEventListener('click', async () => {
+    if (!window.Clerk.user) { 
+        // Mark account status and open appropriate auth modal
+        if (window.AuthCache && window.AuthCache.hasAccount()) {
+            window.Clerk.openSignIn();
+        } else {
+            window.Clerk.openSignUp();
+        }
+        return; 
+    }
         const res = await fetch(`/api/enroll/${courseId}`, {
             method: 'POST',
             headers: { 'X-Clerk-User-Id': window.Clerk.user.id }

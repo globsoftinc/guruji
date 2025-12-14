@@ -90,18 +90,43 @@ const AuthCache = {
      * @param {Object} clerkUser - Clerk user object
      */
     syncWithClerk(clerkUser) {
-        if (clerkUser) {
-            this.set({
-                isLoggedIn: true,
-                userId: clerkUser.id,
-                userName: clerkUser.fullName || clerkUser.firstName || 'User',
-                userImage: clerkUser.imageUrl || null
-            });
-        } else {
-            this.clear();
-        }
-    },
+    if (clerkUser) {
+        // User is logged in - mark that they have an account
+        this.markHasAccount();
+        
+        this.set({
+            isLoggedIn: true,
+            userId: clerkUser.id,
+            userName: clerkUser.fullName || clerkUser.firstName || 'User',
+            userImage: clerkUser.imageUrl || null
+        });
+    } else {
+        this.clear();
+        // Note: We don't clear hasAccount - they still have an account even when logged out
+    }
+},
+/**
+ * Mark that user has created an account (call after successful signup)
+ */
+markHasAccount() {
+    try {
+        localStorage.setItem('guruji_has_account', 'true');
+    } catch (e) {
+        console.warn('AuthCache: Unable to save account status');
+    }
+},
 
+/**
+ * Check if user has ever had an account
+ * @returns {boolean}
+ */
+hasAccount() {
+    try {
+        return localStorage.getItem('guruji_has_account') === 'true';
+    } catch (e) {
+        return false;
+    }
+},
     /**
      * Render optimistic Sign In button immediately
      * @param {HTMLElement} container - Container element for the button
@@ -124,34 +149,43 @@ const AuthCache = {
                 </div>
             `;
             return true;
-        } else if (cached === null) {
-            // No cache (first visit) - show loading state briefly
-            container.innerHTML = `
-                <button class="btn btn-primary" id="optimistic-signin" style="opacity: 0.7;">
-                    <i class="fas fa-spinner fa-spin"></i> Sign In
-                </button>
-            `;
-            return true;
-        } else {
-            // Cache says not logged in - show Sign In button immediately
-            container.innerHTML = `
-                <button class="btn btn-primary" id="optimistic-signin">Sign In</button>
-            `;
-            // Make it clickable - will wait for Clerk or show message
-            const btn = container.querySelector('#optimistic-signin');
-            if (btn) {
-                btn.onclick = () => {
-                    if (window.Clerk && window.Clerk.openSignIn) {
-                        window.Clerk.openSignIn();
-                    } else {
-                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-                        btn.disabled = true;
-                        // Clerk will replace this once loaded
-                    }
-                };
+} else if (cached === null) {
+    // No cache - check if they have an account
+    const buttonText = this.hasAccount() ? 'Sign In' : 'Sign Up';
+    const buttonIcon = this.hasAccount() ? 'fa-sign-in-alt' : 'fa-user-plus';
+    container.innerHTML = `
+        <button class="btn btn-primary" id="optimistic-signin" style="opacity: 0.7;">
+            <i class="fas fa-spinner fa-spin"></i> ${buttonText}
+        </button>
+    `;
+    return true;
+} else {
+    // Cache says not logged in - show appropriate button
+    const buttonText = this.hasAccount() ? 'Sign In' : 'Sign Up';
+    const buttonIcon = this.hasAccount() ? 'fa-sign-in-alt' : 'fa-user-plus';
+    container.innerHTML = `
+        <button class="btn btn-primary" id="optimistic-signin">
+            <i class="fas ${buttonIcon}"></i> ${buttonText}
+        </button>
+    `;
+    // Make it clickable
+    const btn = container.querySelector('#optimistic-signin');
+    if (btn) {
+        btn.onclick = () => {
+            if (window.Clerk) {
+                if (this.hasAccount()) {
+                    window.Clerk.openSignIn();
+                } else {
+                    window.Clerk.openSignUp();
+                }
+            } else {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                btn.disabled = true;
             }
-            return true;
-        }
+        };
+    }
+    return true;
+}
     }
 };
 

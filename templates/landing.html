@@ -199,8 +199,13 @@
         // If Clerk is ready, use it
         if (window.Clerk && window.Clerk.user) {
             window.location.href = '/dashboard';
-        } else if (window.Clerk && window.Clerk.openSignUp) {
-            window.Clerk.openSignUp();
+        } else if (window.Clerk) {
+    // Show Sign In if user has account, otherwise Sign Up
+    if (window.AuthCache && window.AuthCache.hasAccount()) {
+        window.Clerk.openSignIn();
+    } else if (window.Clerk.openSignUp) {
+        window.Clerk.openSignUp();
+    }
         } else {
             // Clerk not ready - show loading and wait
             const btn = event.target.closest('button');
