@@ -302,6 +302,32 @@
         </div>
     </div>
 </div>
+
+<!-- Certificate Name Confirmation Modal -->
+<div id="cert-name-modal" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-certificate"></i> Confirm Your Name</h3>
+            <button class="modal-close" onclick="closeCertNameModal()">&times;</button>
+        </div>
+        <form id="cert-name-form" onsubmit="confirmCertificateName(event)">
+            <div class="form-group">
+                <label>Your Name *</label>
+                <input type="text" id="cert-student-name" required placeholder="Enter your full name">
+                <span class="hint" style="color: #ffc107;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Please enter your name exactly as you want it to appear on your certificate. This cannot be changed
+                    later.
+                </span>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeCertNameModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-certificate"></i> Generate
+                    Certificate</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -526,15 +552,51 @@
     }
     }
 
-    async function generateCertificate() {
+    function generateCertificate() {
+        // Open modal to confirm name before generating certificate
+        const user = window.Clerk.user;
+        const userName = user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+
+        // Pre-fill the name input
+        document.getElementById('cert-student-name').value = userName;
+
+        // Show the modal
+        document.getElementById('cert-name-modal').classList.add('active');
+    }
+
+    function closeCertNameModal() {
+        document.getElementById('cert-name-modal').classList.remove('active');
+    }
+
+    async function confirmCertificateName(e) {
+        e.preventDefault();
+
+        const studentName = document.getElementById('cert-student-name').value.trim();
+
+        if (!studentName) {
+            alert('Please enter your name');
+            return;
+        }
+
+        // Disable submit button to prevent double-click
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
         try {
             const res = await fetch(`/api/courses/${courseId}/generate-certificate`, {
                 method: 'POST',
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Clerk-User-Id': window.Clerk.user.id
+                },
+                body: JSON.stringify({ student_name: studentName })
             });
 
             if (res.ok) {
                 const cert = await res.json();
+                closeCertNameModal();
                 alert(`Certificate generated! 🎉\nYour certificate code: ${cert.certificate_code}`);
                 loadCertificateInfo(); // Reload to show the certificate
             } else {
@@ -543,6 +605,10 @@
             }
         } catch (err) {
             alert('Error generating certificate');
+        } finally {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
     }
 
@@ -873,7 +939,7 @@
 
     /* --- Event Listeners --- */
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeVideoModal(); closePdfModal(); closeEditModal(); closeAddNoteModal(); closeAddRecordingModal(); }
+        if (e.key === 'Escape') { closeVideoModal(); closePdfModal(); closeEditModal(); closeAddNoteModal(); closeAddRecordingModal(); closeCertNameModal(); }
     });
 
     // Handle fullscreen change events
@@ -907,6 +973,9 @@
     });
     document.getElementById('add-recording-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'add-recording-modal') closeAddRecordingModal();
+    });
+    document.getElementById('cert-name-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'cert-name-modal') closeCertNameModal();
     });
 </script>
 {% endblock %}

@@ -148,6 +148,17 @@ def generate_certificate(course_id):
         existing['issued_at'] = existing['issued_at'].isoformat()
         return jsonify(existing)
     
+    # Get custom student name from request body if provided
+    student_name = g.current_user['name']  # Default to user's name
+    try:
+        data = request.get_json(silent=True)
+        if data and data.get('student_name'):
+            custom_name = sanitize_string(data['student_name'].strip())
+            if custom_name and len(custom_name) >= 2 and len(custom_name) <= 100:
+                student_name = custom_name
+    except Exception:
+        pass  # Use default name if parsing fails
+    
     # Calculate attendance
     attendance_count = enrollment.get('attendance_count', 0)
     
@@ -178,7 +189,7 @@ def generate_certificate(course_id):
     certificate = Certificate.create(
         student_id=g.current_user['_id'],
         course_id=course_id,
-        student_name=g.current_user['name'],
+        student_name=student_name,
         course_title=course['title'],
         instructor_name=instructor_name,
         attendance_count=attendance_count,
