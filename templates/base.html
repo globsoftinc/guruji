@@ -173,6 +173,17 @@
                     window.AuthCache.syncWithClerk(window.Clerk.user);
                 }
 
+                // Listen for sign-in events (for pop-up auth redirect)
+                window.Clerk.addListener((event) => {
+                    // If user just signed in and we're not already on dashboard
+                    if (event.user && !window.location.pathname.startsWith('/dashboard')) {
+                        // Small delay to ensure session is fully established
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 100);
+                    }
+                });
+
                 if (window.Clerk.user) {
                     // Clear any optimistic UI and mount real Clerk user button
                     userButtonDiv.innerHTML = '';
