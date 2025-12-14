@@ -120,23 +120,8 @@ def my_attendance(course_id):
 
 
 @certificates_bp.route('/api/courses/<course_id>/generate-certificate', methods=['POST'])
+@require_auth
 def generate_certificate(course_id):
-    clerk_user_id = request.headers.get('X-Clerk-User-Id')
-    if not clerk_user_id or not validate_clerk_user_id(clerk_user_id):
-        return jsonify({'error': 'Authentication required'}), 401
-    
-    user = User.find_by_clerk_id(clerk_user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    # Get name from request body if provided, otherwise use stored name
-    data = request.get_json() or {}
-    certificate_name = data.get('name') or user.get('name', 'Student')
-    
-    # Update user's name in database if a new name was provided
-    if data.get('name'):
-        User.update(clerk_user_id, {'name': data.get('name')})
-
     """Generate certificate for a completed course."""
     if not validate_object_id(course_id):
         return jsonify({'error': 'Invalid course ID format'}), 400
@@ -193,7 +178,7 @@ def generate_certificate(course_id):
     certificate = Certificate.create(
         student_id=g.current_user['_id'],
         course_id=course_id,
-        student_name=certificate_name,
+        student_name=g.current_user['name'],
         course_title=course['title'],
         instructor_name=instructor_name,
         attendance_count=attendance_count,
