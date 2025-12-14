@@ -173,25 +173,6 @@
                     window.AuthCache.syncWithClerk(window.Clerk.user);
                 }
 
-                // Track if user was already signed in when page loaded
-                const wasSignedIn = !!window.Clerk.user;
-
-                // Listen for sign-in events (for pop-up auth redirect)
-                window.Clerk.addListener((event) => {
-                    // Only redirect if:
-                    // 1. User is now signed in
-                    // 2. User was NOT signed in when page loaded (fresh sign-in)
-                    // 3. We're not already on dashboard or sign-in/sign-up pages
-                    if (event.user && !wasSignedIn &&
-                        !window.location.pathname.startsWith('/dashboard') &&
-                        !window.location.pathname.startsWith('/sign-')) {
-                        // Small delay to ensure session is fully established
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 100);
-                    }
-                });
-
                 if (window.Clerk.user) {
                     // Clear any optimistic UI and mount real Clerk user button
                     userButtonDiv.innerHTML = '';
