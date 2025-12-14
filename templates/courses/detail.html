@@ -14,6 +14,9 @@
                 <span><i class="fas fa-user"></i> {{ instructor.name if instructor else 'Instructor' }}</span>
                 <span><i class="fas fa-users"></i> {{ student_count }} students</span>
                 <span><i class="fas fa-video"></i> {{ (course.completed_classes|length) if course.completed_classes else 0 }} lessons</span>
+                <span class="certification-badge {{ 'free-cert' if course.price == 0 else 'paid-cert' }}">
+        <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
+    </span>
             </div>
             <div id="enroll-section" class="enroll-section">
                 <button id="enroll-btn" class="btn btn-primary btn-lg" style="display: none;">

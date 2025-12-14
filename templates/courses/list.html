@@ -31,6 +31,9 @@
                     <span><i class="fas fa-user"></i> {{ course.instructor.name if course.instructor else 'Instructor'
                         }}</span>
                     <span><i class="fas fa-users"></i> {{ course.student_count or 0 }} students</span>
+                    <span class="certification-badge {{ 'free-cert' if course.price == 0 else 'paid-cert' }}">
+        <i class="fas fa-certificate"></i> {{ 'Free Certification' if course.price == 0 else 'Paid' }}
+    </span>
 
                 </div>
             </div>
