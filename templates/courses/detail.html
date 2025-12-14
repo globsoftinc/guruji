@@ -1,6 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ course.title }} - Guruji{% endblock %}
 
+{% block description %}{{ course.description }}{% endblock %}
+
+{% block head %}
+<!-- Open Graph Meta Tags (Facebook, Instagram, LinkedIn, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ course.title }} - Guruji">
+<meta property="og:description" content="{{ course.description }}">
+{% if course.thumbnail %}
+<meta property="og:image" content="{{ course.thumbnail }}">
+{% else %}
+<meta property="og:image" content="{{ url_for('static', filename='img/guruji.png', _external=True) }}">
+{% endif %}
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:site_name" content="Guruji">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ course.title }} - Guruji">
+<meta name="twitter:description" content="{{ course.description }}">
+{% if course.thumbnail %}
+<meta name="twitter:image" content="{{ course.thumbnail }}">
+{% else %}
+<meta name="twitter:image" content="{{ url_for('static', filename='img/guruji.png', _external=True) }}">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="course-detail">
     <div class="course-header">
