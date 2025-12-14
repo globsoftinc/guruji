@@ -257,7 +257,15 @@
                 <h3><i class="fas fa-bug"></i> Report a Bug</h3>
                 <button class="bug-report-close" id="bugReportClose" aria-label="Close">&times;</button>
             </div>
-            <form id="bugReportForm" enctype="multipart/form-data">
+            <!-- Hidden iframe for form submission with attachments -->
+            <iframe name="bugReportFrame" id="bugReportFrame" style="display:none;"></iframe>
+            <form id="bugReportForm" action="https://formsubmit.co/info.globsoft@gmail.com" method="POST"
+                enctype="multipart/form-data" target="bugReportFrame">
+                <!-- FormSubmit.co hidden fields -->
+                <input type="hidden" name="_subject" id="bugReportSubject"
+                    value="[Bug Report - G5tO7mMG] New Bug Report">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_template" value="table">
                 <div class="bug-report-field">
                     <label for="bugReportName">Your Name *</label>
                     <input type="text" id="bugReportName" name="name" required placeholder="Enter your name">
@@ -560,38 +568,29 @@
                 }
             });
 
-            // Form submission with FormSubmit.co
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
+            // Form submission with FormSubmit.co (using hidden iframe for attachment support)
+            const iframe = document.getElementById('bugReportFrame');
+            const subjectField = document.getElementById('bugReportSubject');
+
+            form.addEventListener('submit', (e) => {
+                // Update subject with user's name
+                const userName = document.getElementById('bugReportName').value;
+                subjectField.value = '[Bug Report - G5tO7mMG] Bug from ' + userName;
 
                 const submitBtn = document.getElementById('bugReportSubmit');
-                const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
                 submitBtn.disabled = true;
+                document.getElementById('bugReportCancel').disabled = true;
+            });
 
-                const formData = new FormData(form);
-                formData.append('_subject', '[Bug Report - G5tO7mMG] Bug from ' + formData.get('name'));
-                formData.append('_captcha', 'false');
-                formData.append('_template', 'table');
-
-                try {
-                    const response = await fetch('https://formsubmit.co/ajax/info.globsoft@gmail.com', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        form.style.display = 'none';
-                        successDiv.style.display = 'block';
-                    } else {
-                        throw new Error('Submission failed');
-                    }
-                } catch (error) {
-                    alert('Failed to send report. Please try again or contact support directly.');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
+            // Listen for iframe load (form submission complete)
+            iframe.addEventListener('load', function () {
+                // Check if form was actually submitted (not initial load)
+                const submitBtn = document.getElementById('bugReportSubmit');
+                if (submitBtn && submitBtn.disabled) {
+                    // Form was submitted, show success
+                    form.style.display = 'none';
+                    successDiv.style.display = 'block';
                 }
             });
         })();
