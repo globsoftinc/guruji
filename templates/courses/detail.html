@@ -238,10 +238,9 @@
                 <input type="text" id="recording-title" placeholder="e.g., Week 1 - Introduction" required>
             </div>
             <div class="form-group">
-                <label>Video Link *</label>
-                <input type="url" id="recording-link"
-                    placeholder="https://drive.google.com/... or https://youtube.com/..." required>
-                <span class="hint">Supports Google Drive or YouTube links</span>
+                <label>Google Drive / Video Link *</label>
+                <input type="url" id="recording-link" placeholder="https://drive.google.com/file/d/..." required>
+                <span class="hint">Paste the shareable link from Google Drive</span>
             </div>
             <div class="form-group">
                 <label>Duration (minutes)</label>
@@ -760,42 +759,16 @@
     }
 
     /* --- Video & PDF Viewer Helper Functions --- */
-    function getEmbedUrl(videoLink) {
-        // Check for YouTube URLs first
-        if (videoLink.includes('youtube.com') || videoLink.includes('youtu.be')) {
-            let videoId = '';
-
-            // Handle youtube.com/watch?v=VIDEO_ID
-            if (videoLink.includes('youtube.com/watch')) {
-                const match = videoLink.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-                if (match) videoId = match[1];
-            }
-            // Handle youtu.be/VIDEO_ID
-            else if (videoLink.includes('youtu.be/')) {
-                const match = videoLink.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-                if (match) videoId = match[1];
-            }
-            // Handle youtube.com/embed/VIDEO_ID (already embed format)
-            else if (videoLink.includes('youtube.com/embed/')) {
-                return videoLink; // Already in embed format
-            }
-
-            if (videoId) {
-                return `https://www.youtube.com/embed/${videoId}`;
-            }
-        }
-
-        // Handle Google Drive URLs
+    function getEmbedUrl(driveLink) {
         let fileId = '';
-        if (videoLink.includes('/file/d/')) {
-            const match = videoLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveLink.includes('/file/d/')) {
+            const match = driveLink.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
             if (match) fileId = match[1];
-        } else if (videoLink.includes('id=')) {
-            const match = videoLink.match(/id=([a-zA-Z0-9_-]+)/);
+        } else if (driveLink.includes('id=')) {
+            const match = driveLink.match(/id=([a-zA-Z0-9_-]+)/);
             if (match) fileId = match[1];
         }
-
-        return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : videoLink;
+        return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : driveLink;
     }
 
     function playVideo(driveLink, title) {
