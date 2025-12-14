@@ -296,6 +296,36 @@
         </div>
     </div>
 </div>
+<!-- Name Confirmation Modal -->
+<div id="name-confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-check"></i> Confirm Your Name</h3>
+            <button class="modal-close" onclick="closeNameConfirmModal()">&times;</button>
+        </div>
+        <div style="padding: 1.5rem;">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Is this your name? This will appear on your certificate.
+            </p>
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="certificate-name" placeholder="Enter your full name" required 
+                    style="font-size: 1.1rem; padding: 0.8rem;">
+            </div>
+            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; padding: 0.75rem; margin: 1rem 0;">
+                <p style="color: #ffc107; margin: 0; font-size: 0.85rem;">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>NOTE:</strong> Kindly enter your name correctly as it will appear on your certificate and cannot be changed later.
+                </p>
+            </div>
+            <div class="form-actions" style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-ghost" onclick="closeNameConfirmModal()" style="flex: 1;">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmNameAndGenerate()" style="flex: 2;">
+                    <i class="fas fa-check"></i> Confirm & Generate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -519,26 +549,91 @@
         }
     }
 
-    async function generateCertificate() {
-        try {
-            const res = await fetch(`/api/courses/${courseId}/generate-certificate`, {
-                method: 'POST',
-                headers: { 'X-Clerk-User-Id': window.Clerk.user.id }
-            });
-            
-            if (res.ok) {
-                const cert = await res.json();
-                alert(`Certificate generated! 🎉\nYour certificate code: ${cert.certificate_code}`);
-                loadCertificateInfo(); // Reload to show the certificate
-            } else {
-                const error = await res.json();
-                alert('Error: ' + error.error);
-            }
-        } catch (err) {
-            alert('Error generating certificate');
-        }
-    }
+   async function generateCertificate() {
+    // Open the name confirmation modal instead of generating directly
+    const modal = document.getElementById('name-confirm-modal');
+    const nameInput = document.getElementById('certificate-name');
+    
+    // Pre-fill with current name from Clerk
+    const currentName = window.Clerk.user.fullName || 
+                       `${window.Clerk.user.firstName || ''} ${window.Clerk.user.lastName || ''}`.trim() || 
+                       'User';
+    nameInput.value = currentName;
+    
+    modal.classList.add('active');
+    nameInput.focus();
+    nameInput.select();
+}
 
+function closeNameConfirmModal() {
+    document.getElementById('name-confirm-modal').classList.remove('active');
+}
+
+async function confirmNameAndGenerate() {
+    const nameInput = document.getElementById('certificate-name');
+    const name = nameInput.value.trim();
+    
+    if (!name || name.length < 2) {
+        alert('Please enter a valid name (at least 2 characters)');
+        nameInput.focus();
+        return;
+    }
+    
+    // Disable button to prevent double-click
+    const confirmBtn = document.querySelector('#name-confirm-modal .btn-primary');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    
+    try {
+        // First, update the name in the database
+        const updateRes = await fetch('/api/auth/sync-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                clerk_user_id: window.Clerk.user.id,
+                name: name
+            })
+        });
+        
+        if (!updateRes.ok) {
+            console.warn('Could not update profile name');
+        }
+        
+        // Now generate the certificate
+        const res = await fetch(`/api/courses/${courseId}/generate-certificate`, {
+            method: 'POST',
+            headers: { 
+                'X-Clerk-User-Id': window.Clerk.user.id,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: name })
+        });
+        
+        if (res.ok) {
+            const cert = await res.json();
+            closeNameConfirmModal();
+            alert(`Certificate generated! 🎉\nYour certificate code: ${cert.certificate_code}`);
+            loadCertificateInfo(); // Reload to show the certificate
+        } else {
+            const error = await res.json();
+            alert('Error: ' + error.error);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Error generating certificate');
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Generate';
+    }
+}
+
+// Allow Enter key to confirm
+document.getElementById('certificate-name')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmNameAndGenerate();
+    }
+});
    function updateEnrolledVisibility() {
     document.querySelectorAll('.enrolled-only').forEach(el => {
         if (el.id !== 'attendance-btn') {
